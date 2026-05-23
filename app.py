@@ -1,14 +1,14 @@
 import os
+import re
 import json
 from datetime import datetime
 from pathlib import Path
-from flask import Flask, render_template, request, send_file, jsonify
+from flask import Flask, render_template, request, send_file, jsonify, Response, stream_with_context
 
 app = Flask(__name__)
 
 
 def parse_json(raw: str) -> dict:
-    import re
     raw = raw.strip()
     if raw.startswith("```"):
         raw = raw.split("```")[1]
@@ -291,6 +291,99 @@ def generate():
         plan = get_real_plan(age_group, players, duration, focus, last_week)
 
     return render_template("index.html", plan=plan, evaluation=None, mock=MOCK_MODE)
+
+
+DELIMITER = "\n---NEXT---\n"
+
+
+@app.route("/stream-plan", methods=["POST"])
+def stream_plan():
+    age_group = request.form.get("age_group", "U10")
+    players   = int(request.form.get("players", 12))
+    duration  = int(request.form.get("duration", 75))
+    focus     = request.form.get("focus", "Passing")
+    last_week = request.form.get("last_week", "").strip()
+
+    def generate():
+        meta = {"age_group": age_group, "players": players, "duration": duration, "focus": focus}
+        yield json.dumps(meta) + DELIMITER
+
+        if MOCK_MODE:
+            import time
+            plan = get_mock_plan(age_group, players, duration, focus, last_week)
+            for section in plan["sections"]:
+                time.sleep(0.4)
+                yield json.dumps(section) + DELIMITER
+            return
+
+        import anthropic
+        client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
+
+        age_guidance = {
+            "U6":  "Players are 4-6. Fun and ball familiarity only. No tactics. Keep activities under 8 minutes. Very basic coaching points.",
+            "U8":  "Players are 6-8. Simple skill introduction. Fun first. Very basic coaching points only.",
+            "U10": "Players are 8-10. Basic techniques with light competition. Simple positional awareness.",
+            "U12": "Players are 10-12. CRITICAL: no basic technique cues. Focus on through balls, one-twos, third-man runs, pressing, creating space. Tactical and intermediate-level coaching points only.",
+            "U14": "Players are 12-14. High tactical complexity. Positional play, pressing systems, transitions. Advanced coaching points.",
+            "U16": "Players are 14-16. Near-professional level. Team shape, game model, clinical finishing. Highly specific coaching points.",
+        }
+
+        prompt = f"""You are an expert youth soccer coach. Generate a session plan as individual JSON section objects.
+
+Details:
+- Age group: {age_group}
+- Players: {players}
+- Duration: {duration} minutes
+- Main focus: {focus}
+- Last session issue: {last_week or "None"}
+
+AGE GROUP GUIDANCE (follow strictly):
+{age_guidance.get(age_group, '')}
+
+Output ONLY raw JSON objects separated by exactly: ---NEXT---
+No outer array. No extra text. No markdown.
+
+Output 5 sections in this order: warmup, drill, drill, game, cooldown.
+Separate each with ---NEXT--- on its own line.
+
+Each section must match exactly:
+{{"type":"warmup|drill|game|cooldown","title":"...","duration":<int>,"setup":"...","instructions":["..."],"coaching_points":["..."],"why":"..."}}
+
+Time allocation: warmup 10-15%, each drill 20-25%, game 30-35%, cooldown 5 min."""
+
+        buffer = ""
+        with client.messages.stream(
+            model="claude-sonnet-4-6",
+            max_tokens=2500,
+            messages=[{"role": "user", "content": prompt}],
+        ) as stream:
+            for text in stream.text_stream:
+                buffer += text
+                while DELIMITER.strip() in buffer:
+                    parts = buffer.split(DELIMITER.strip(), 1)
+                    chunk = parts[0].strip()
+                    if chunk:
+                        try:
+                            cleaned = re.sub(r",\s*([}\]])", r"\1", chunk)
+                            json.loads(cleaned)
+                            yield cleaned + DELIMITER
+                        except json.JSONDecodeError:
+                            pass
+                    buffer = parts[1] if len(parts) > 1 else ""
+
+        if buffer.strip():
+            try:
+                cleaned = re.sub(r",\s*([}\]])", r"\1", buffer.strip())
+                json.loads(cleaned)
+                yield cleaned + DELIMITER
+            except json.JSONDecodeError:
+                pass
+
+    return Response(
+        stream_with_context(generate()),
+        mimetype="text/plain",
+        headers={"X-Accel-Buffering": "no", "Cache-Control": "no-cache"},
+    )
 
 
 @app.route("/evaluate", methods=["POST"])

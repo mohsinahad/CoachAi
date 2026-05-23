@@ -779,91 +779,42 @@
     </form>
   </div>
 
-  <!-- PLAN OUTPUT -->
-  {% if plan %}
-
   {% if mock %}
   <div class="mock-notice">
     <span>⚠</span>
-    <span>Mock mode — this is a pre-written example plan for testing. Real AI generation activates when the API key is connected.</span>
+    <span>Mock mode active — AI generation activates when the API key is connected.</span>
   </div>
   {% endif %}
 
-  <div class="plan-header">
-    <div class="plan-title">{{ plan.age_group }} · {{ plan.focus }} Session</div>
-    <div class="plan-meta">
-      <span class="plan-tag">{{ plan.players }} players</span>
-      <span class="plan-tag">{{ plan.duration }} minutes</span>
-      <span class="plan-tag">{{ plan.sections | length }} sections</span>
-      <span id="ai-score-tag" class="plan-tag" style="display:none"></span>
+  <!-- STREAMING PLAN OUTPUT -->
+  <div id="plan-header-area" style="display:none;">
+    <div class="plan-header">
+      <div class="plan-title" id="plan-title-text"></div>
+      <div class="plan-meta" id="plan-meta-area">
+        <span class="plan-tag" id="plan-tag-players"></span>
+        <span class="plan-tag" id="plan-tag-duration"></span>
+        <span id="ai-score-tag" class="plan-tag" style="display:none"></span>
+      </div>
     </div>
   </div>
 
-  {% for section in plan.sections %}
-  <div class="section-card">
-    <div class="section-header">
-      <div class="section-left">
-        <span class="section-badge badge-{{ section.type }}">{{ section.type }}</span>
-        <span class="section-title">{{ section.title }}</span>
-      </div>
-      <div style="display:flex;align-items:center;gap:0.75rem;">
-        <span class="section-time">{{ section.duration }} min</span>
-        <button class="section-toggle" onclick="toggleSection(this)">&#9660;</button>
-      </div>
-    </div>
+  <div id="plan-area"></div>
 
-    <div class="section-body">
-
-      <div class="setup-block">
-        <div class="setup-label">Setup</div>
-        {{ section.setup }}
-      </div>
-
-      <div class="steps-block">
-        {% for step in section.instructions %}
-        <div class="step">
-          <span class="step-num">{{ loop.index }}</span>
-          <span>{{ step }}</span>
-        </div>
-        {% endfor %}
-      </div>
-
-      <div class="two-col">
-        <div class="coaching-block">
-          <div class="block-label">Coaching Points</div>
-          <ul>
-            {% for point in section.coaching_points %}
-            <li>{{ point }}</li>
-            {% endfor %}
-          </ul>
-        </div>
-        <div class="why-block">
-          <div class="block-label">Why This Drill</div>
-          <p>{{ section.why }}</p>
-        </div>
-      </div>
-
-    </div>
-  </div>
-  {% endfor %}
-
-  <div class="actions">
+  <div class="actions" id="plan-actions" style="display:none;">
     <a href="/" class="btn-new">New Session</a>
     <button class="btn-print" onclick="window.print()">Print Session</button>
     <button class="field-btn" id="field-btn" onclick="toggleFieldMode()">Field View</button>
   </div>
 
   <!-- AHMED'S RATING — Phase 0 only -->
-  <div class="rating-card">
+  <div class="rating-card" id="rating-card" style="display:none;">
     <div class="rating-title">Ahmed's Rating</div>
     <div class="rating-subtitle">Phase 0 test — would a real player use this session? Rate it honestly.</div>
-
     <div class="stars">
       {% for i in range(1, 11) %}
       <button class="star-btn" onclick="rate({{ i }})" id="star-{{ i }}">{{ i }}</button>
       {% endfor %}
     </div>
-
     <div class="rating-feedback">
       <div>
         <label for="what-worked">What worked well?</label>
@@ -878,19 +829,57 @@
     </div>
   </div>
 
-  {% else %}
-
-  <div class="empty">
+  <div class="empty" id="empty-state">
     <div class="empty-icon">⚽</div>
     <h2>Ready to build your session</h2>
     <p>Fill in your team details above and hit Generate. Your complete training session will appear here — ready to use or print.</p>
   </div>
 
-  {% endif %}
-
 </div>
 
 <script>
+  function buildSectionCard(s) {
+    const badgeClass = { warmup:'badge-warmup', drill:'badge-drill', game:'badge-game', cooldown:'badge-cooldown' }[s.type] || 'badge-drill';
+    const steps = (s.instructions || []).map((st, i) =>
+      `<div class="step"><span class="step-num">${i+1}</span><span>${st}</span></div>`).join('');
+    const points = (s.coaching_points || []).map(p => `<li>${p}</li>`).join('');
+
+    const card = document.createElement('div');
+    card.className = 'section-card';
+    card.dataset.type     = s.type;
+    card.dataset.title    = s.title;
+    card.dataset.duration = s.duration;
+    card.style.opacity = '0';
+    card.style.transform = 'translateY(12px)';
+    card.style.transition = 'opacity 0.35s ease, transform 0.35s ease';
+
+    card.innerHTML = `
+      <div class="section-header" onclick="toggleSection(this.querySelector('.section-toggle'))">
+        <div class="section-left">
+          <span class="section-badge ${badgeClass}">${s.type}</span>
+          <span class="section-title">${s.title}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:0.75rem;">
+          <span class="section-time">${s.duration} min</span>
+          <button class="section-toggle" onclick="event.stopPropagation();toggleSection(this)">&#9660;</button>
+        </div>
+      </div>
+      <div class="section-body">
+        <div class="setup-block"><div class="setup-label">Setup</div>${s.setup}</div>
+        <div class="steps-block">${steps}</div>
+        <div class="two-col">
+          <div class="coaching-block"><div class="block-label">Coaching Points</div><ul>${points}</ul></div>
+          <div class="why-block"><div class="block-label">Why This Drill</div><p>${s.why}</p></div>
+        </div>
+      </div>`;
+
+    requestAnimationFrame(() => {
+      card.style.opacity = '1';
+      card.style.transform = 'translateY(0)';
+    });
+    return card;
+  }
+
   function toggleMenu() {
     document.getElementById('mobile-menu').classList.toggle('open');
   }
@@ -909,27 +898,6 @@
     }
   }
 
-  // auto-enable field view and fetch evaluation when a plan is present
-  {% if plan %}
-  toggleFieldMode();
-
-  fetch('/evaluate', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({{ plan | tojson }})
-  })
-  .then(r => r.json())
-  .then(ev => {
-    const tag = document.getElementById('ai-score-tag');
-    if (!tag) return;
-    const score = ev.overall_score;
-    const cls = score >= 7 ? 'tag-green' : score >= 5 ? 'tag-amber' : 'tag-red';
-    tag.className = `plan-tag ${cls}`;
-    tag.textContent = `AI score: ${score.toFixed(1)}/10`;
-    tag.style.display = 'inline-block';
-  })
-  .catch(() => {});
-  {% endif %}
 
   // on mobile, collapse all sections by default when plan loads
   if (window.innerWidth <= 640 && !document.body.classList.contains('field-mode')) {
@@ -993,7 +961,99 @@
     document.getElementById('duration').value = defaultDuration[this.value] || '60';
   });
 
-  document.querySelector('form').addEventListener('submit', startLoading);
+  document.querySelector('form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    startLoading();
+
+    const formData = new FormData(this);
+    const planArea = document.getElementById('plan-area');
+    if (planArea) planArea.innerHTML = '';
+
+    const metaArea   = document.getElementById('plan-meta-area');
+    const headerArea = document.getElementById('plan-header-area');
+    const scoreTag   = document.getElementById('ai-score-tag');
+    if (scoreTag) scoreTag.style.display = 'none';
+
+    try {
+      const response = await fetch('/stream-plan', { method: 'POST', body: formData });
+      const reader   = response.body.getReader();
+      const decoder  = new TextDecoder();
+      let buffer = '';
+      let isFirst = true;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        const delimiter = '\n---NEXT---\n';
+        let idx;
+        while ((idx = buffer.indexOf(delimiter)) !== -1) {
+          const chunk = buffer.slice(0, idx).trim();
+          buffer = buffer.slice(idx + delimiter.length);
+          if (!chunk) continue;
+
+          try {
+            const data = JSON.parse(chunk);
+            if (isFirst) {
+              // metadata chunk — render plan header
+              isFirst = false;
+              if (headerArea) {
+                headerArea.style.display = 'block';
+                document.getElementById('plan-title-text').textContent =
+                  `${data.age_group} · ${data.focus} Session`;
+                document.getElementById('plan-tag-players').textContent  = `${data.players} players`;
+                document.getElementById('plan-tag-duration').textContent = `${data.duration} minutes`;
+                document.getElementById('loading-overlay').classList.remove('visible');
+                document.getElementById('empty-state').style.display    = 'none';
+                // store meta for rating submission
+                window._planMeta = data;
+              }
+            } else {
+              // section chunk — render card
+              if (planArea) {
+                const card = buildSectionCard(data);
+                planArea.appendChild(card);
+                card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                // trigger field view layout update
+                if (document.body.classList.contains('field-mode')) {
+                  card.querySelectorAll('.setup-block,.coaching-block,.why-block').forEach(el => el.style.display = 'none');
+                }
+              }
+            }
+          } catch(err) { /* incomplete chunk */ }
+        }
+      }
+
+      // show actions + rating card
+      const actions = document.getElementById('plan-actions');
+      const ratingCard = document.getElementById('rating-card');
+      if (actions) actions.style.display = 'flex';
+      if (ratingCard) ratingCard.style.display = 'block';
+      toggleFieldMode();
+
+      const planSections = planArea ? [...planArea.querySelectorAll('.section-card')].map(c => ({
+        type:   c.dataset.type,
+        title:  c.dataset.title,
+        duration: parseInt(c.dataset.duration),
+      })) : [];
+
+      const meta = { age_group: formData.get('age_group'), players: parseInt(formData.get('players')),
+                     duration: parseInt(formData.get('duration')), focus: formData.get('focus'), sections: planSections };
+      fetch('/evaluate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(meta) })
+        .then(r => r.json()).then(ev => {
+          if (!scoreTag) return;
+          const cls = ev.overall_score >= 7 ? 'tag-green' : ev.overall_score >= 5 ? 'tag-amber' : 'tag-red';
+          scoreTag.className = `plan-tag ${cls}`;
+          scoreTag.textContent = `AI score: ${ev.overall_score.toFixed(1)}/10`;
+          scoreTag.style.display = 'inline-block';
+        }).catch(() => {});
+
+    } catch(err) {
+      document.getElementById('loading-overlay').classList.remove('visible');
+      alert('Something went wrong generating the plan. Please try again.');
+    }
+  });
 
   let selectedRating = 0;
 
@@ -1019,8 +1079,8 @@
         rating,
         what_worked: worked,
         what_wrong:  wrong,
-        age_group:   '{{ plan.age_group if plan else "" }}',
-        focus:       '{{ plan.focus if plan else "" }}'
+        age_group:   (window._planMeta || {}).age_group || '',
+        focus:       (window._planMeta || {}).focus || ''
       })
     })
     .then(r => r.json())
