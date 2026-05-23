@@ -377,6 +377,115 @@
     .empty h2 { color: var(--white); font-size: 1.2rem; margin-bottom: 0.5rem; }
     .empty p { font-size: 0.88rem; max-width: 360px; margin: 0 auto; line-height: 1.7; }
 
+    /* GENERATION PROGRESS BAR */
+    .gen-progress {
+      display: none;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .gen-progress.visible { display: block; }
+    .gen-steps {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      position: relative;
+    }
+    .gen-step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.4rem;
+      flex: 1;
+      position: relative;
+      z-index: 1;
+    }
+    .gen-step-dot {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      background: var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--muted);
+      transition: all 0.4s ease;
+      position: relative;
+    }
+    .gen-step-label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      text-align: center;
+      transition: color 0.3s;
+      white-space: nowrap;
+    }
+    .gen-connector {
+      flex: 1;
+      height: 2px;
+      background: var(--border);
+      position: relative;
+      top: -10px;
+      z-index: 0;
+      overflow: hidden;
+    }
+    .gen-connector-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--green-light);
+      transition: width 0.5s ease;
+    }
+
+    /* step states */
+    .gen-step.active .gen-step-dot {
+      border-color: var(--green);
+      background: var(--green-dim);
+      color: var(--green-light);
+      animation: pulse-dot 1s ease-in-out infinite;
+    }
+    .gen-step.active .gen-step-label { color: var(--green-light); }
+    .gen-step.done .gen-step-dot {
+      border-color: var(--green-light);
+      background: var(--green);
+      color: white;
+    }
+    .gen-step.done .gen-step-label { color: var(--text); }
+    .gen-step.done .gen-connector-fill { width: 100%; }
+
+    @keyframes pulse-dot {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.4); }
+      50%       { box-shadow: 0 0 0 6px rgba(34,197,94,0); }
+    }
+
+    .gen-step.active .gen-step-dot::after {
+      content: '';
+      position: absolute;
+      inset: -5px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      border-top-color: var(--green-light);
+      border-right-color: rgba(34,197,94,0.3);
+      animation: spin-ring 0.7s linear infinite;
+    }
+    @keyframes spin-ring {
+      to { transform: rotate(360deg); }
+    }
+
+    .gen-progress-action {
+      display: none;
+      justify-content: center;
+      padding-top: 0.85rem;
+      margin-top: 0.85rem;
+      border-top: 1px solid var(--border);
+    }
+    .gen-progress-action.visible { display: flex; }
+
     /* FIELD VIEW MODE */
     .field-btn {
       background: transparent;
@@ -798,11 +907,45 @@
     </div>
   </div>
 
+  <!-- GENERATION PROGRESS BAR -->
+  <div class="gen-progress" id="gen-progress">
+    <div class="gen-steps">
+      <div class="gen-step" id="gstep-0">
+        <div class="gen-step-dot" id="gdot-0">1</div>
+        <div class="gen-step-label">Warmup</div>
+      </div>
+      <div class="gen-connector"><div class="gen-connector-fill" id="gconn-0"></div></div>
+      <div class="gen-step" id="gstep-1">
+        <div class="gen-step-dot" id="gdot-1">2</div>
+        <div class="gen-step-label">Drill 1</div>
+      </div>
+      <div class="gen-connector"><div class="gen-connector-fill" id="gconn-1"></div></div>
+      <div class="gen-step" id="gstep-2">
+        <div class="gen-step-dot" id="gdot-2">3</div>
+        <div class="gen-step-label">Drill 2</div>
+      </div>
+      <div class="gen-connector"><div class="gen-connector-fill" id="gconn-2"></div></div>
+      <div class="gen-step" id="gstep-3">
+        <div class="gen-step-dot" id="gdot-3">4</div>
+        <div class="gen-step-label">Game</div>
+      </div>
+      <div class="gen-connector"><div class="gen-connector-fill" id="gconn-3"></div></div>
+      <div class="gen-step" id="gstep-4">
+        <div class="gen-step-dot" id="gdot-4">5</div>
+        <div class="gen-step-label">Cooldown</div>
+      </div>
+    </div>
+    <div class="gen-progress-action" id="gen-progress-action">
+      <button class="field-btn" id="field-btn-progress" onclick="toggleFieldMode()">Enter Field View</button>
+    </div>
+  </div>
+
   <div id="plan-area"></div>
 
   <div class="actions" id="plan-actions" style="display:none;">
     <a href="/" class="btn-new">New Session</a>
     <button class="btn-print" onclick="window.print()">Print Session</button>
+    <button class="btn-print" id="share-btn" onclick="shareSession()">Share Session</button>
     <button class="field-btn" id="field-btn" onclick="toggleFieldMode()">Field View</button>
   </div>
 
@@ -890,12 +1033,12 @@
 
   function toggleFieldMode() {
     document.body.classList.toggle('field-mode');
+    const isField = document.body.classList.contains('field-mode');
     const btn = document.getElementById('field-btn');
-    btn.classList.toggle('active');
-    btn.textContent = document.body.classList.contains('field-mode') ? 'Exit Field View' : 'Field View';
-    if (document.body.classList.contains('field-mode')) {
-      document.querySelectorAll('.section-card').forEach(c => c.classList.remove('collapsed'));
-    }
+    if (btn) { btn.classList.toggle('active', isField); btn.textContent = isField ? 'Exit Field View' : 'Field View'; }
+    const btnP = document.getElementById('field-btn-progress');
+    if (btnP) { btnP.classList.toggle('active', isField); btnP.textContent = isField ? 'Exit Field View' : 'Enter Field View'; }
+    if (isField) document.querySelectorAll('.section-card').forEach(c => c.classList.remove('collapsed'));
   }
 
 
@@ -955,6 +1098,80 @@
     }, 4000);
   }
 
+  function shareSession() {
+    const title    = document.getElementById('plan-title-text')?.textContent || 'Session Plan';
+    const players  = document.getElementById('plan-tag-players')?.textContent || '';
+    const duration = document.getElementById('plan-tag-duration')?.textContent || '';
+
+    const lines = [`CoachAI — ${title}`, `${players} · ${duration}`, ''];
+
+    document.querySelectorAll('#plan-area .section-card').forEach(card => {
+      const type  = card.querySelector('.section-badge')?.textContent?.toUpperCase() || '';
+      const name  = card.querySelector('.section-title')?.textContent || '';
+      const time  = card.querySelector('.section-time')?.textContent || '';
+      lines.push(`${type} — ${name} (${time})`);
+      card.querySelectorAll('.step').forEach((step, i) => {
+        const txt = step.querySelector('span:last-child')?.textContent?.trim() || '';
+        if (txt) lines.push(`  ${i + 1}. ${txt}`);
+      });
+      lines.push('');
+    });
+
+    lines.push('Generated by CoachAI');
+    const text = lines.join('\n');
+
+    const btn = document.getElementById('share-btn');
+
+    if (navigator.share) {
+      navigator.share({ title: `CoachAI — ${title}`, text }).catch(() => {});
+    } else {
+      navigator.clipboard.writeText(text).then(() => {
+        if (btn) { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Share Session', 2000); }
+      }).catch(() => {
+        // final fallback: select from a temp textarea
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.cssText = 'position:fixed;opacity:0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        if (btn) { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Share Session', 2000); }
+      });
+    }
+  }
+
+  let _sectionCount = 0;
+
+  function initProgress() {
+    _sectionCount = 0;
+    for (let i = 0; i < 5; i++) {
+      document.getElementById('gstep-' + i).className = 'gen-step';
+      document.getElementById('gdot-' + i).textContent = i + 1;
+      if (i < 4) document.getElementById('gconn-' + i).style.width = '0%';
+    }
+    document.getElementById('gen-progress-action').classList.remove('visible');
+    document.getElementById('gen-progress').classList.add('visible');
+    document.getElementById('gstep-0').className = 'gen-step active';
+  }
+
+  function advanceProgress() {
+    const done = _sectionCount;
+    _sectionCount++;
+    const dotEl = document.getElementById('gdot-' + done);
+    if (dotEl) dotEl.textContent = '✓';
+    const stepEl = document.getElementById('gstep-' + done);
+    if (stepEl) stepEl.className = 'gen-step done';
+    if (done < 4) {
+      const connEl = document.getElementById('gconn-' + done);
+      if (connEl) connEl.style.width = '100%';
+      const nextEl = document.getElementById('gstep-' + _sectionCount);
+      if (nextEl) nextEl.className = 'gen-step active';
+    } else {
+      document.getElementById('gen-progress-action').classList.add('visible');
+    }
+  }
+
   const defaultDuration = { U6: '45', U8: '45', U10: '60', U12: '90', U14: '90', U16: '90' };
 
   document.getElementById('age_group').addEventListener('change', function () {
@@ -968,6 +1185,7 @@
     const formData = new FormData(this);
     const planArea = document.getElementById('plan-area');
     if (planArea) planArea.innerHTML = '';
+    document.getElementById('gen-progress').classList.remove('visible');
 
     const metaArea   = document.getElementById('plan-meta-area');
     const headerArea = document.getElementById('plan-header-area');
@@ -1008,12 +1226,14 @@
                 document.getElementById('empty-state').style.display    = 'none';
                 // store meta for rating submission
                 window._planMeta = data;
+                initProgress();
               }
             } else {
               // section chunk — render card
               if (planArea) {
                 const card = buildSectionCard(data);
                 planArea.appendChild(card);
+                advanceProgress();
                 card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                 // trigger field view layout update
                 if (document.body.classList.contains('field-mode')) {
@@ -1030,7 +1250,6 @@
       const ratingCard = document.getElementById('rating-card');
       if (actions) actions.style.display = 'flex';
       if (ratingCard) ratingCard.style.display = 'block';
-      toggleFieldMode();
 
       const planSections = planArea ? [...planArea.querySelectorAll('.section-card')].map(c => ({
         type:   c.dataset.type,
