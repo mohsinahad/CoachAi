@@ -6,6 +6,19 @@ from flask import Flask, render_template, request, send_file, jsonify
 
 app = Flask(__name__)
 
+
+def parse_json(raw: str) -> dict:
+    import re
+    raw = raw.strip()
+    if raw.startswith("```"):
+        raw = raw.split("```")[1]
+        if raw.startswith("json"):
+            raw = raw[4:]
+    raw = raw.strip()
+    # remove trailing commas before } or ]
+    raw = re.sub(r",\s*([}\]])", r"\1", raw)
+    return json.loads(raw)
+
 DATA_DIR = Path(__file__).parent / "data"
 DATA_DIR.mkdir(exist_ok=True)
 RATINGS_FILE = DATA_DIR / "ratings.json"
@@ -170,7 +183,7 @@ Return raw JSON only — no markdown, no explanation outside the JSON:
 }}
 
 Session plan to evaluate:
-{_json.dumps(plan, indent=2)}"""
+{json.dumps(plan, indent=2)}"""
 
     msg = client.messages.create(
         model="claude-haiku-4-5",
@@ -178,15 +191,9 @@ Session plan to evaluate:
         messages=[{"role": "user", "content": prompt}],
     )
 
-    raw = msg.content[0].text.strip()
-    # strip markdown code fences if present
-    if raw.startswith("```"):
-        raw = raw.split("```")[1]
-        if raw.startswith("json"):
-            raw = raw[4:]
-    result = _json.loads(raw.strip())
+    result = parse_json(msg.content[0].text)
 
-    evaluations = _json.loads(EVALUATIONS_FILE.read_text()) if EVALUATIONS_FILE.exists() else []
+    evaluations = json.loads(EVALUATIONS_FILE.read_text()) if EVALUATIONS_FILE.exists() else []
     evaluations.append({
         "timestamp": datetime.now().isoformat(),
         "age_group": plan["age_group"],
@@ -195,7 +202,7 @@ Session plan to evaluate:
         "duration":  plan["duration"],
         **result,
     })
-    EVALUATIONS_FILE.write_text(_json.dumps(evaluations, indent=2))
+    EVALUATIONS_FILE.write_text(json.dumps(evaluations, indent=2))
 
     return result
 
@@ -262,13 +269,7 @@ Return raw JSON only — no markdown, no text outside the JSON:
         messages=[{"role": "user", "content": prompt}],
     )
 
-    import json
-    raw = message.content[0].text.strip()
-    if raw.startswith("```"):
-        raw = raw.split("```")[1]
-        if raw.startswith("json"):
-            raw = raw[4:]
-    return json.loads(raw.strip())
+    return parse_json(message.content[0].text)
 
 
 @app.route("/", methods=["GET"])
