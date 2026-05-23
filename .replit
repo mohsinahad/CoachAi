@@ -1,0 +1,10 @@
+run = "python app.py"
+entrypoint = "app.py"
+modules = ["python-3.11:v18-20231218-bd790d7"]
+
+[nix]
+channel = "stable-23_11"
+
+[[ports]]
+localPort = 5050
+externalPort = 80

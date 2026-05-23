@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CoachAI — Session Planner</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green: #16a34a;
+      --green-light: #22c55e;
+      --green-dim: #14532d;
+      --bg: #080c08;
+      --bg2: #0f1a0f;
+      --bg3: #141f14;
+      --border: #1f2d1f;
+      --text: #e8f5e8;
+      --muted: #6b8c6b;
+      --white: #f0faf0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      font-size: 16px;
+      line-height: 1.6;
+    }
+
+    /* NAV */
+    nav {
+      background: rgba(8,12,8,0.95);
+      border-bottom: 1px solid var(--border);
+      padding: 0 1.5rem;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .nav-brand { font-weight: 800; color: var(--green-light); font-size: 1.1rem; letter-spacing: -0.01em; }
+    .nav-links { display: flex; gap: 0.25rem; }
+    .nav-link {
+      font-size: 0.78rem;
+      color: var(--muted);
+      text-decoration: none;
+      padding: 0.35rem 0.75rem;
+      border-radius: 6px;
+      transition: all 0.15s;
+    }
+    .nav-link:hover { color: var(--white); background: var(--bg2); }
+    .nav-link.active { color: var(--green-light); background: var(--green-dim); }
+
+    /* LAYOUT */
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+    }
+
+    /* FORM */
+    .form-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+    }
+    .form-title {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--white);
+      margin-bottom: 0.3rem;
+    }
+    .form-subtitle {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 1.8rem;
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+    .form-group.full { grid-column: 1 / -1; }
+    label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      font-weight: 600;
+    }
+    select, input[type="number"], input[type="text"], textarea {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--white);
+      padding: 0.6rem 0.85rem;
+      font-size: 0.9rem;
+      width: 100%;
+      outline: none;
+      transition: border-color 0.2s;
+      font-family: inherit;
+    }
+    select:focus, input:focus, textarea:focus { border-color: var(--green); }
+    textarea { resize: vertical; min-height: 70px; line-height: 1.5; }
+    select option { background: #0f1a0f; }
+
+    .btn-generate {
+      background: var(--green);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 0.75rem 2rem;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 0.5rem;
+      transition: background 0.2s;
+      letter-spacing: 0.01em;
+    }
+    .btn-generate:hover { background: #15803d; }
+
+    /* MOCK BADGE */
+    .mock-notice {
+      background: rgba(245,158,11,0.1);
+      border: 1px solid rgba(245,158,11,0.3);
+      border-radius: 8px;
+      padding: 0.7rem 1rem;
+      font-size: 0.82rem;
+      color: #f59e0b;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    /* PLAN OUTPUT */
+    .plan-header {
+      margin-bottom: 1.5rem;
+    }
+    .plan-title {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--white);
+      letter-spacing: -0.01em;
+    }
+    .plan-meta {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-top: 0.5rem;
+    }
+    .plan-tag {
+      font-size: 0.75rem;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 3px 10px;
+      border-radius: 20px;
+    }
+    .tag-green { background: rgba(22,163,74,0.12); border-color: var(--green-dim); color: var(--green-light); }
+    .tag-amber { background: rgba(245,158,11,0.12); border-color: rgba(245,158,11,0.3); color: #fbbf24; }
+    .tag-red   { background: rgba(239,68,68,0.12);  border-color: rgba(239,68,68,0.3);  color: #f87171; }
+
+    /* SECTION CARDS */
+    .section-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: 1rem;
+      overflow: hidden;
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.2rem;
+      border-bottom: 1px solid var(--border);
+      gap: 1rem;
+    }
+    .section-left { display: flex; align-items: center; gap: 0.75rem; }
+    .section-badge {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .badge-warmup   { background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.25); }
+    .badge-drill    { background: rgba(168,85,247,0.15); color: #c084fc; border: 1px solid rgba(168,85,247,0.25); }
+    .badge-game     { background: rgba(22,163,74,0.15);  color: #4ade80; border: 1px solid rgba(22,163,74,0.25); }
+    .badge-cooldown { background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.25); }
+    .section-title  { font-size: 1rem; font-weight: 700; color: var(--white); }
+    .section-time   { font-size: 0.8rem; color: var(--muted); white-space: nowrap; }
+
+    .section-body { padding: 1.2rem; display: flex; flex-direction: column; gap: 1rem; }
+
+    .setup-block {
+      font-size: 0.85rem;
+      color: var(--muted);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.75rem 1rem;
+      line-height: 1.6;
+    }
+    .setup-label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--green);
+      font-weight: 600;
+      margin-bottom: 0.3rem;
+    }
+
+    .steps-block { display: flex; flex-direction: column; gap: 0.4rem; }
+    .step {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+      font-size: 0.87rem;
+      color: var(--text);
+    }
+    .step-num {
+      width: 20px;
+      height: 20px;
+      background: var(--green-dim);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: var(--green-light);
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+    .coaching-block, .why-block {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.75rem 1rem;
+    }
+    .block-label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+    .coaching-block .block-label { color: #c084fc; }
+    .why-block .block-label { color: var(--green-light); }
+    .coaching-block ul { list-style: none; display: flex; flex-direction: column; gap: 0.3rem; }
+    .coaching-block ul li {
+      font-size: 0.82rem;
+      color: var(--text);
+      padding-left: 1rem;
+      position: relative;
+    }
+    .coaching-block ul li::before { content: '→'; position: absolute; left: 0; color: #c084fc; font-size: 0.75rem; }
+    .why-block p { font-size: 0.82rem; color: var(--muted); font-style: italic; line-height: 1.6; }
+
+    /* AHMED RATING */
+    .rating-card {
+      background: var(--bg2);
+      border: 1px solid var(--green-dim);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-top: 2rem;
+    }
+    .rating-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--white);
+      margin-bottom: 0.3rem;
+    }
+    .rating-subtitle { font-size: 0.82rem; color: var(--muted); margin-bottom: 1.2rem; }
+    .stars {
+      display: flex;
+      gap: 0.4rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+    .star-btn {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--muted);
+      padding: 0.5rem 0.8rem;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-weight: 600;
+    }
+    .star-btn:hover, .star-btn.selected {
+      background: var(--green-dim);
+      border-color: var(--green);
+      color: var(--green-light);
+    }
+    .rating-feedback {
+      display: flex;
+      flex-direction: column;
+      gap: 0.8rem;
+    }
+    .rating-feedback textarea {
+      min-height: 80px;
+    }
+    .btn-submit-rating {
+      background: transparent;
+      border: 1px solid var(--green);
+      color: var(--green-light);
+      border-radius: 8px;
+      padding: 0.6rem 1.5rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      align-self: flex-start;
+    }
+    .btn-submit-rating:hover { background: var(--green-dim); }
+
+    /* PRINT */
+    .actions {
+      display: flex;
+      gap: 0.75rem;
+      margin-top: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .btn-print {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 8px;
+      padding: 0.6rem 1.2rem;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-print:hover { border-color: var(--green); color: var(--green-light); }
+    .btn-new {
+      background: var(--green-dim);
+      border: 1px solid var(--green);
+      color: var(--green-light);
+      border-radius: 8px;
+      padding: 0.6rem 1.2rem;
+      font-size: 0.85rem;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .btn-new:hover { background: var(--green); color: white; }
+
+    /* EMPTY STATE */
+    .empty {
+      text-align: center;
+      padding: 4rem 2rem;
+      color: var(--muted);
+    }
+    .empty-icon { font-size: 3rem; margin-bottom: 1rem; }
+    .empty h2 { color: var(--white); font-size: 1.2rem; margin-bottom: 0.5rem; }
+    .empty p { font-size: 0.88rem; max-width: 360px; margin: 0 auto; line-height: 1.7; }
+
+    /* FIELD VIEW MODE */
+    .field-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 8px;
+      padding: 0.6rem 1.2rem;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .field-btn:hover, .field-btn.active {
+      border-color: var(--green);
+      color: var(--green-light);
+      background: var(--green-dim);
+    }
+    body.field-mode .setup-block,
+    body.field-mode .coaching-block,
+    body.field-mode .why-block,
+    body.field-mode .eval-card,
+    body.field-mode .rating-card,
+    body.field-mode .form-card,
+    body.field-mode .plan-meta { display: none !important; }
+    body.field-mode .section-title { font-size: 1.15rem; }
+    body.field-mode .step         { font-size: 1rem; line-height: 1.7; }
+    body.field-mode .step-num     { width: 24px; height: 24px; font-size: 0.8rem; }
+    body.field-mode .section-card { margin-bottom: 0.6rem; }
+    body.field-mode .section-body { padding: 1rem; }
+    body.field-mode .plan-title   { font-size: 1.2rem; }
+
+    /* HAMBURGER NAV */
+    .nav-hamburger {
+      display: none;
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 10px;
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 1rem;
+      line-height: 1;
+    }
+    .nav-hamburger:hover { color: var(--white); border-color: var(--green); }
+    .mobile-menu {
+      display: none;
+      position: fixed;
+      top: 52px;
+      left: 0; right: 0;
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      z-index: 9;
+      flex-direction: column;
+      padding: 0.5rem;
+    }
+    .mobile-menu.open { display: flex; }
+    .mobile-menu a {
+      color: var(--text);
+      text-decoration: none;
+      padding: 0.75rem 1rem;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      transition: background 0.15s;
+    }
+    .mobile-menu a:hover, .mobile-menu a.active {
+      background: var(--green-dim);
+      color: var(--green-light);
+    }
+
+    /* ACCORDION for section cards on mobile */
+    .section-toggle {
+      display: none;
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 1.2rem;
+      cursor: pointer;
+      padding: 0 0.25rem;
+      line-height: 1;
+      transition: transform 0.2s;
+    }
+    .section-card.collapsed .section-body { display: none; }
+    .section-card.collapsed .section-toggle { transform: rotate(-90deg); }
+
+    /* MOBILE */
+    @media (max-width: 640px) {
+      .container { padding: 1rem; }
+      .two-col   { grid-template-columns: 1fr; }
+      .form-grid { grid-template-columns: 1fr; }
+
+      /* Nav */
+      .nav-links    { display: none; }
+      .nav-hamburger { display: block; }
+
+      /* Form */
+      .form-card { padding: 1.2rem; }
+      .btn-generate { font-size: 1rem; padding: 0.85rem; }
+      select, input[type="number"], input[type="text"], textarea {
+        font-size: 1rem;
+        padding: 0.75rem 1rem;
+      }
+
+      /* Plan */
+      .plan-title { font-size: 1.2rem; }
+      .section-header { padding: 0.9rem 1rem; cursor: pointer; }
+      .section-toggle { display: block; }
+      .section-body { padding: 1rem; }
+      .step { font-size: 0.9rem; }
+
+      /* Actions */
+      .actions { flex-direction: column; }
+      .actions > * { width: 100%; text-align: center; }
+
+      /* Rating */
+      .stars { gap: 0.3rem; }
+      .star-btn { padding: 0.6rem; min-width: 36px; font-size: 0.9rem; }
+
+      /* Eval grid */
+      .eval-grid { grid-template-columns: 1fr; }
+    }
+
+    /* TABLET */
+    @media (min-width: 641px) and (max-width: 900px) {
+      .form-grid { grid-template-columns: 1fr 1fr; }
+      .eval-grid { grid-template-columns: 1fr 1fr; }
+    }
+
+    /* EVAL CARD */
+    .eval-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem;
+      margin-top: 1.5rem;
+    }
+    .eval-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 0.75rem;
+    }
+    .eval-title { font-size: 0.95rem; font-weight: 700; color: var(--white); }
+    .eval-sub   { font-size: 0.75rem; color: var(--muted); margin-top: 0.2rem; }
+    .eval-score-ring {
+      width: 54px; height: 54px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; font-weight: 800; flex-shrink: 0;
+      border: 3px solid;
+    }
+    .ring-green { border-color: var(--green-light); color: var(--green-light); background: rgba(22,163,74,0.1); }
+    .ring-amber { border-color: #f59e0b; color: #fbbf24; background: rgba(245,158,11,0.1); }
+    .ring-red   { border-color: #ef4444; color: #f87171; background: rgba(239,68,68,0.1); }
+    .eval-comment {
+      font-size: 0.85rem; color: var(--text); font-style: italic;
+      margin-bottom: 1.2rem; line-height: 1.6;
+    }
+    .eval-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 0.85rem;
+      margin-bottom: 1rem;
+    }
+    .eval-criterion {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.75rem;
+    }
+    .eval-crit-top {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 0.4rem;
+    }
+    .eval-crit-name  { font-size: 0.78rem; font-weight: 600; color: var(--white); }
+    .eval-crit-score { font-size: 0.78rem; font-weight: 700; }
+    .cs-green { color: var(--green-light); }
+    .cs-amber { color: #fbbf24; }
+    .cs-red   { color: #f87171; }
+    .eval-bar-bg {
+      height: 4px; background: var(--border); border-radius: 4px;
+      margin-bottom: 0.45rem; overflow: hidden;
+    }
+    .eval-bar-fill { height: 100%; border-radius: 4px; transition: width 0.6s ease; }
+    .bar-green { background: var(--green-light); }
+    .bar-amber { background: #f59e0b; }
+    .bar-red   { background: #ef4444; }
+    .eval-crit-reason { font-size: 0.75rem; color: var(--muted); line-height: 1.5; }
+    .eval-disclaimer {
+      font-size: 0.72rem; color: var(--muted);
+      border-top: 1px solid var(--border); padding-top: 0.75rem; text-align: center;
+    }
+
+    /* LOADING OVERLAY */
+    .loading-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(8, 12, 8, 0.96);
+      z-index: 999;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2rem;
+      padding: 2rem;
+    }
+    .loading-overlay.visible { display: flex; }
+
+    .ball-wrap {
+      position: relative;
+      width: 72px;
+      height: 72px;
+    }
+    .ball {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #fff 0%, #c8e6c9 40%, #388e3c 100%);
+      box-shadow: 0 0 30px rgba(34,197,94,0.4);
+      animation: bounce 1s ease-in-out infinite alternate;
+    }
+    .ball-shadow {
+      width: 60px;
+      height: 10px;
+      background: rgba(34,197,94,0.2);
+      border-radius: 50%;
+      margin: 6px auto 0;
+      animation: shadow 1s ease-in-out infinite alternate;
+    }
+    @keyframes bounce {
+      from { transform: translateY(0px); }
+      to   { transform: translateY(-18px); }
+    }
+    @keyframes shadow {
+      from { transform: scaleX(1);   opacity: 0.3; }
+      to   { transform: scaleX(0.7); opacity: 0.1; }
+    }
+
+    .loading-text {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--white);
+      text-align: center;
+    }
+    .loading-sub {
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-top: 0.3rem;
+      text-align: center;
+    }
+
+    .quote-wrap {
+      max-width: 480px;
+      text-align: center;
+      min-height: 80px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .quote-text {
+      font-size: 0.95rem;
+      color: var(--text);
+      font-style: italic;
+      line-height: 1.75;
+      opacity: 0;
+      transition: opacity 0.6s ease;
+    }
+    .quote-text.visible { opacity: 1; }
+    .quote-author {
+      font-size: 0.75rem;
+      color: var(--green-light);
+      margin-top: 0.6rem;
+      opacity: 0;
+      transition: opacity 0.6s ease;
+    }
+    .quote-author.visible { opacity: 1; }
+
+    .loading-dots {
+      display: flex;
+      gap: 6px;
+    }
+    .loading-dots span {
+      width: 6px;
+      height: 6px;
+      background: var(--green);
+      border-radius: 50%;
+      animation: dot 1.2s ease-in-out infinite;
+    }
+    .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes dot {
+      0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+      40%            { transform: scale(1);   opacity: 1; }
+    }
+
+    @media print {
+      nav, .form-card, .mock-notice, .rating-card, .actions { display: none !important; }
+      body { background: white; color: black; }
+      .section-card { border: 1px solid #ccc; break-inside: avoid; }
+      .section-badge, .why-block .block-label, .coaching-block .block-label { color: black !important; }
+      .section-title, .plan-title { color: black; }
+      .setup-block, .coaching-block, .why-block { background: #f9f9f9; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- LOADING OVERLAY -->
+<div class="loading-overlay" id="loading-overlay">
+  <div class="ball-wrap">
+    <div class="ball"></div>
+  </div>
+  <div class="ball-shadow"></div>
+  <div>
+    <div class="loading-text">Building your session plan...</div>
+    <div class="loading-sub">Claude is thinking about your team</div>
+  </div>
+  <div class="loading-dots">
+    <span></span><span></span><span></span>
+  </div>
+  <div class="quote-wrap">
+    <div class="quote-text" id="quote-text"></div>
+    <div class="quote-author" id="quote-author"></div>
+  </div>
+</div>
+
+<nav>
+  <div class="nav-brand">CoachAI</div>
+  <div class="nav-links">
+    <a href="/" class="nav-link active">Session Planner</a>
+    <a href="/progress" class="nav-link">Progress</a>
+    <a href="/plan" class="nav-link">Business Plan</a>
+  </div>
+  <button class="nav-hamburger" id="hamburger" onclick="toggleMenu()">&#9776;</button>
+</nav>
+
+<div class="mobile-menu" id="mobile-menu">
+  <a href="/" class="active">Session Planner</a>
+  <a href="/progress">Progress</a>
+  <a href="/plan">Business Plan</a>
+</div>
+
+<div class="container">
+
+  <!-- FORM -->
+  <div class="form-card">
+    <div class="form-title">Build your session plan</div>
+    <div class="form-subtitle">Fill in the details below — your complete training session will be ready in seconds.</div>
+
+    <form method="POST" action="/generate">
+      <div class="form-grid">
+
+        <div class="form-group">
+          <label for="age_group">Age Group</label>
+          <select name="age_group" id="age_group">
+            <option value="U6"  {% if plan and plan.age_group == 'U6'  %}selected{% endif %}>U6 (ages 4–6)</option>
+            <option value="U8"  {% if plan and plan.age_group == 'U8'  %}selected{% endif %}>U8 (ages 6–8)</option>
+            <option value="U10" {% if plan and plan.age_group == 'U10' %}selected{% endif %} selected>U10 (ages 8–10)</option>
+            <option value="U12" {% if plan and plan.age_group == 'U12' %}selected{% endif %}>U12 (ages 10–12)</option>
+            <option value="U14" {% if plan and plan.age_group == 'U14' %}selected{% endif %}>U14 (ages 12–14)</option>
+            <option value="U16" {% if plan and plan.age_group == 'U16' %}selected{% endif %}>U16 (ages 14–16)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="players">Number of Players</label>
+          <input type="number" name="players" id="players" min="4" max="30"
+                 value="{{ plan.players if plan else 12 }}" />
+        </div>
+
+        <div class="form-group">
+          <label for="duration">Session Length</label>
+          <select name="duration" id="duration">
+            <option value="45"  {% if plan and plan.duration == 45  %}selected{% endif %}>45 minutes</option>
+            <option value="60"  {% if plan and plan.duration == 60  %}selected{% endif %}>60 minutes</option>
+            <option value="75"  {% if plan and plan.duration == 75  %}selected{% endif %} selected>75 minutes</option>
+            <option value="90"  {% if plan and plan.duration == 90  %}selected{% endif %}>90 minutes</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="focus">Session Focus</label>
+          <select name="focus" id="focus">
+            <option value="Passing"   {% if plan and plan.focus == 'Passing'   %}selected{% endif %} selected>Passing</option>
+            <option value="Defending" {% if plan and plan.focus == 'Defending' %}selected{% endif %}>Defending</option>
+            <option value="Finishing" {% if plan and plan.focus == 'Finishing' %}selected{% endif %}>Finishing</option>
+            <option value="Dribbling" {% if plan and plan.focus == 'Dribbling' %}selected{% endif %}>Dribbling</option>
+            <option value="Fitness"   {% if plan and plan.focus == 'Fitness'   %}selected{% endif %}>Fitness</option>
+            <option value="Teamwork"  {% if plan and plan.focus == 'Teamwork'  %}selected{% endif %}>Teamwork</option>
+          </select>
+        </div>
+
+        <div class="form-group full">
+          <label for="last_week">What went wrong last session? (optional)</label>
+          <textarea name="last_week" id="last_week"
+                    placeholder="e.g. Players weren't moving after passing, first touch was poor, we lost the small-sided game badly...">{% if plan %}{{ request.form.get('last_week', '') }}{% endif %}</textarea>
+        </div>
+
+      </div>
+      <button type="submit" class="btn-generate">Generate Session Plan</button>
+    </form>
+  </div>
+
+  <!-- PLAN OUTPUT -->
+  {% if plan %}
+
+  {% if mock %}
+  <div class="mock-notice">
+    <span>⚠</span>
+    <span>Mock mode — this is a pre-written example plan for testing. Real AI generation activates when the API key is connected.</span>
+  </div>
+  {% endif %}
+
+  <div class="plan-header">
+    <div class="plan-title">{{ plan.age_group }} · {{ plan.focus }} Session</div>
+    <div class="plan-meta">
+      <span class="plan-tag">{{ plan.players }} players</span>
+      <span class="plan-tag">{{ plan.duration }} minutes</span>
+      <span class="plan-tag">{{ plan.sections | length }} sections</span>
+      {% if evaluation %}
+      <span class="plan-tag {% if evaluation.overall_score >= 7 %}tag-green{% elif evaluation.overall_score >= 5 %}tag-amber{% else %}tag-red{% endif %}">
+        AI score: {{ "%.1f"|format(evaluation.overall_score) }}/10
+      </span>
+      {% endif %}
+    </div>
+  </div>
+
+  {% for section in plan.sections %}
+  <div class="section-card">
+    <div class="section-header">
+      <div class="section-left">
+        <span class="section-badge badge-{{ section.type }}">{{ section.type }}</span>
+        <span class="section-title">{{ section.title }}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:0.75rem;">
+        <span class="section-time">{{ section.duration }} min</span>
+        <button class="section-toggle" onclick="toggleSection(this)">&#9660;</button>
+      </div>
+    </div>
+
+    <div class="section-body">
+
+      <div class="setup-block">
+        <div class="setup-label">Setup</div>
+        {{ section.setup }}
+      </div>
+
+      <div class="steps-block">
+        {% for step in section.instructions %}
+        <div class="step">
+          <span class="step-num">{{ loop.index }}</span>
+          <span>{{ step }}</span>
+        </div>
+        {% endfor %}
+      </div>
+
+      <div class="two-col">
+        <div class="coaching-block">
+          <div class="block-label">Coaching Points</div>
+          <ul>
+            {% for point in section.coaching_points %}
+            <li>{{ point }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+        <div class="why-block">
+          <div class="block-label">Why This Drill</div>
+          <p>{{ section.why }}</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+  {% endfor %}
+
+  <div class="actions">
+    <a href="/" class="btn-new">New Session</a>
+    <button class="btn-print" onclick="window.print()">Print Session</button>
+    <button class="field-btn" id="field-btn" onclick="toggleFieldMode()">Field View</button>
+  </div>
+
+  <!-- AHMED'S RATING — Phase 0 only -->
+  <div class="rating-card">
+    <div class="rating-title">Ahmed's Rating</div>
+    <div class="rating-subtitle">Phase 0 test — would a real player use this session? Rate it honestly.</div>
+
+    <div class="stars">
+      {% for i in range(1, 11) %}
+      <button class="star-btn" onclick="rate({{ i }})" id="star-{{ i }}">{{ i }}</button>
+      {% endfor %}
+    </div>
+
+    <div class="rating-feedback">
+      <div>
+        <label for="what-worked">What worked well?</label>
+        <textarea id="what-worked" placeholder="Which drills felt real and useful?"></textarea>
+      </div>
+      <div>
+        <label for="what-wrong">What felt wrong or fake?</label>
+        <textarea id="what-wrong" placeholder="Any drills a coach would skip? Instructions that were confusing?"></textarea>
+      </div>
+      <button class="btn-submit-rating" onclick="submitRating()">Save Rating</button>
+      <div id="rating-saved" style="display:none; font-size:0.82rem; color:var(--green-light);">Rating saved. Thanks Ahmed.</div>
+    </div>
+  </div>
+
+  {% else %}
+
+  <div class="empty">
+    <div class="empty-icon">⚽</div>
+    <h2>Ready to build your session</h2>
+    <p>Fill in your team details above and hit Generate. Your complete training session will appear here — ready to use or print.</p>
+  </div>
+
+  {% endif %}
+
+</div>
+
+<script>
+  function toggleMenu() {
+    document.getElementById('mobile-menu').classList.toggle('open');
+  }
+
+  function toggleSection(btn) {
+    btn.closest('.section-card').classList.toggle('collapsed');
+  }
+
+  function toggleFieldMode() {
+    document.body.classList.toggle('field-mode');
+    const btn = document.getElementById('field-btn');
+    btn.classList.toggle('active');
+    btn.textContent = document.body.classList.contains('field-mode') ? 'Exit Field View' : 'Field View';
+    if (document.body.classList.contains('field-mode')) {
+      document.querySelectorAll('.section-card').forEach(c => c.classList.remove('collapsed'));
+    }
+  }
+
+  // on mobile, collapse all sections by default when plan loads
+  if (window.innerWidth <= 640) {
+    document.querySelectorAll('.section-card').forEach(c => c.classList.add('collapsed'));
+  }
+
+  // close mobile menu on outside click
+  document.addEventListener('click', e => {
+    if (!e.target.closest('nav') && !e.target.closest('.mobile-menu')) {
+      document.getElementById('mobile-menu')?.classList.remove('open');
+    }
+  });
+
+  const quotes = [
+    { text: "A good coach will make his players see what they can be rather than what they are.", author: "— Unknown" },
+    { text: "The best coaches don't give answers. They ask the right questions.", author: "— Unknown" },
+    { text: "A good coach can change a game. A great coach can change a life.", author: "— John Wooden" },
+    { text: "Coaching is unlocking a person's potential to maximise their own performance.", author: "— Timothy Gallwey" },
+    { text: "The greatest sign of success for a coach is to say: the players no longer need me.", author: "— Maria Montessori" },
+    { text: "It's not the will to win that matters — everyone has that. It's the will to prepare to win.", author: "— Bear Bryant" },
+    { text: "Success is no accident. It is hard work, perseverance, learning, and love of what you are doing.", author: "— Pelé" },
+    { text: "Talent wins games, but teamwork and intelligence win championships.", author: "— Michael Jordan" },
+    { text: "The difference between ordinary and extraordinary is that little extra.", author: "— Unknown" },
+    { text: "You don't play the game to feel good. You play the game to get better.", author: "— Unknown" },
+    { text: "A coach is someone who sees more than you see and who makes you become more than you think you can be.", author: "— Unknown" },
+    { text: "Champions are made in the moments they want to quit.", author: "— Unknown" },
+    { text: "The strength of the team is each individual member. The strength of each member is the team.", author: "— Phil Jackson" },
+    { text: "In football, the worst blindness is only seeing the ball.", author: "— Nelson Falcão Rodrigues" },
+    { text: "Train hard, win easy.", author: "— Unknown" },
+  ];
+
+  let quoteIndex = 0;
+  let quoteInterval = null;
+
+  function showQuote(index) {
+    const textEl   = document.getElementById('quote-text');
+    const authorEl = document.getElementById('quote-author');
+    textEl.classList.remove('visible');
+    authorEl.classList.remove('visible');
+    setTimeout(() => {
+      textEl.textContent   = quotes[index].text;
+      authorEl.textContent = quotes[index].author;
+      textEl.classList.add('visible');
+      authorEl.classList.add('visible');
+    }, 300);
+  }
+
+  function startLoading() {
+    document.getElementById('loading-overlay').classList.add('visible');
+    quoteIndex = Math.floor(Math.random() * quotes.length);
+    showQuote(quoteIndex);
+    quoteInterval = setInterval(() => {
+      quoteIndex = (quoteIndex + 1) % quotes.length;
+      showQuote(quoteIndex);
+    }, 4000);
+  }
+
+  const defaultDuration = { U6: '45', U8: '45', U10: '60', U12: '90', U14: '90', U16: '90' };
+
+  document.getElementById('age_group').addEventListener('change', function () {
+    document.getElementById('duration').value = defaultDuration[this.value] || '60';
+  });
+
+  document.querySelector('form').addEventListener('submit', startLoading);
+
+  let selectedRating = 0;
+
+  function rate(n) {
+    selectedRating = n;
+    for (let i = 1; i <= 10; i++) {
+      const btn = document.getElementById('star-' + i);
+      btn.classList.toggle('selected', i <= n);
+    }
+  }
+
+  function submitRating() {
+    const rating = selectedRating;
+    const worked = document.getElementById('what-worked').value;
+    const wrong  = document.getElementById('what-wrong').value;
+
+    if (rating === 0) { alert('Pick a rating first (1–10)'); return; }
+
+    fetch('/rate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        rating,
+        what_worked: worked,
+        what_wrong:  wrong,
+        age_group:   '{{ plan.age_group if plan else "" }}',
+        focus:       '{{ plan.focus if plan else "" }}'
+      })
+    })
+    .then(r => r.json())
+    .then(() => {
+      document.getElementById('rating-saved').style.display = 'block';
+    });
+  }
+</script>
+
+</body>
+</html>

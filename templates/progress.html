@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CoachAI — Progress Tracker</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --green: #16a34a; --green-light: #22c55e; --green-dim: #14532d;
+      --bg: #080c08; --bg2: #0f1a0f; --bg3: #141f14;
+      --border: #1f2d1f; --text: #e8f5e8; --muted: #6b8c6b; --white: #f0faf0;
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 16px; line-height: 1.6; }
+
+    nav {
+      background: rgba(8,12,8,0.95); border-bottom: 1px solid var(--border);
+      padding: 0 1.5rem; height: 52px; display: flex; align-items: center;
+      justify-content: space-between; position: sticky; top: 0; z-index: 10;
+    }
+    .nav-brand { font-weight: 800; color: var(--green-light); font-size: 1.1rem; }
+    .nav-links { display: flex; gap: 0.25rem; }
+    .nav-link { font-size: 0.78rem; color: var(--muted); text-decoration: none; padding: 0.35rem 0.75rem; border-radius: 6px; transition: all 0.15s; }
+    .nav-link:hover { color: var(--white); background: var(--bg2); }
+    .nav-link.active { color: var(--green-light); background: var(--green-dim); }
+
+    .container { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+    .page-title { font-size: 1.6rem; font-weight: 800; color: var(--white); letter-spacing: -0.01em; }
+    .page-sub { font-size: 0.88rem; color: var(--muted); margin-top: 0.3rem; margin-bottom: 2rem; }
+
+    /* PHASE CARDS */
+    .phases { display: flex; flex-direction: column; gap: 1rem; margin-bottom: 2.5rem; }
+    .phase-card {
+      background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+    }
+    .phase-card.active { border-color: var(--green); }
+    .phase-card.locked { opacity: 0.5; }
+    .phase-head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 1.2rem; gap: 1rem; flex-wrap: wrap;
+    }
+    .phase-left { display: flex; align-items: center; gap: 0.85rem; }
+    .phase-icon {
+      width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center;
+      justify-content: center; font-size: 0.75rem; font-weight: 800; flex-shrink: 0; border: 2px solid;
+    }
+    .icon-active { background: var(--green-dim); border-color: var(--green-light); color: var(--green-light); }
+    .icon-done   { background: var(--green); border-color: var(--green-light); color: white; }
+    .icon-locked { background: var(--bg); border-color: var(--border); color: var(--muted); }
+    .phase-name { font-size: 0.95rem; font-weight: 700; color: var(--white); }
+    .phase-time { font-size: 0.75rem; color: var(--muted); }
+    .phase-status {
+      font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+      padding: 3px 10px; border-radius: 4px;
+    }
+    .status-active  { background: rgba(22,163,74,0.15);  color: var(--green-light); border: 1px solid var(--green-dim); }
+    .status-locked  { background: var(--bg); color: var(--muted); border: 1px solid var(--border); }
+    .status-done    { background: var(--green); color: white; }
+
+    .phase-body { padding: 0 1.2rem 1.2rem; border-top: 1px solid var(--border); margin-top: 0; }
+    .criteria-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin: 1rem 0 0.5rem; font-weight: 600; }
+    .criteria-text { font-size: 0.88rem; color: var(--text); }
+
+    /* PROGRESS BAR */
+    .progress-wrap { margin-top: 0.85rem; }
+    .progress-bar-bg { background: var(--bg); border: 1px solid var(--border); border-radius: 20px; height: 8px; overflow: hidden; }
+    .progress-bar-fill { height: 100%; border-radius: 20px; background: linear-gradient(to right, var(--green-dim), var(--green-light)); transition: width 0.5s ease; }
+    .progress-info { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--muted); margin-top: 0.4rem; }
+
+    /* RATINGS TABLE */
+    .section-title { font-size: 1.1rem; font-weight: 700; color: var(--white); margin-bottom: 1rem; }
+
+    .no-ratings {
+      background: var(--bg2); border: 1px solid var(--border); border-radius: 10px;
+      padding: 2.5rem; text-align: center; color: var(--muted); font-size: 0.88rem;
+    }
+
+    .ratings-grid { display: flex; flex-direction: column; gap: 0.75rem; }
+    .rating-row {
+      background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+      padding: 1rem 1.2rem; display: grid; grid-template-columns: 48px 1fr auto; gap: 1rem; align-items: start;
+    }
+    .rating-row.pass { border-color: var(--green-dim); }
+    .rating-score {
+      width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center;
+      justify-content: center; font-size: 1.1rem; font-weight: 800; flex-shrink: 0;
+      border: 2px solid;
+    }
+    .score-high { background: rgba(22,163,74,0.15); border-color: var(--green); color: var(--green-light); }
+    .score-mid  { background: rgba(245,158,11,0.15); border-color: #f59e0b; color: #fbbf24; }
+    .score-low  { background: rgba(239,68,68,0.15);  border-color: #ef4444; color: #f87171; }
+    .rating-details { min-width: 0; }
+    .rating-meta { font-size: 0.75rem; color: var(--muted); margin-bottom: 0.4rem; }
+    .rating-worked { font-size: 0.83rem; color: var(--text); }
+    .rating-wrong  { font-size: 0.83rem; color: #f87171; margin-top: 0.2rem; }
+    .rating-date   { font-size: 0.72rem; color: var(--muted); white-space: nowrap; }
+
+    .consec-badge {
+      display: inline-block; font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.08em; padding: 2px 8px; border-radius: 4px; margin-left: 0.5rem;
+      background: rgba(22,163,74,0.2); color: var(--green-light); border: 1px solid var(--green-dim);
+    }
+
+    .btn-clear {
+      background: transparent; border: 1px solid var(--border); color: var(--muted);
+      border-radius: 6px; padding: 0.4rem 1rem; font-size: 0.78rem; cursor: pointer;
+      margin-top: 1.5rem; transition: all 0.2s;
+    }
+    .btn-clear:hover { border-color: #ef4444; color: #f87171; }
+
+    /* PHASE 0 COMPLETE BANNER */
+    .success-banner {
+      display: none; background: rgba(22,163,74,0.12); border: 1px solid var(--green);
+      border-radius: 10px; padding: 1.5rem; margin-bottom: 2rem; text-align: center;
+    }
+    .success-banner h2 { color: var(--green-light); font-size: 1.2rem; margin-bottom: 0.4rem; }
+    .success-banner p { font-size: 0.88rem; color: var(--muted); }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand">CoachAI</div>
+  <div class="nav-links">
+    <a href="/" class="nav-link">Session Planner</a>
+    <a href="/progress" class="nav-link active">Progress</a>
+    <a href="/plan" class="nav-link">Business Plan</a>
+  </div>
+</nav>
+
+<div class="container">
+
+  <div class="page-title">Phase Tracker</div>
+  <div class="page-sub">Track where we are in the buildout plan. Phase 0 must be complete before moving on.</div>
+
+  <!-- PHASE 0 COMPLETE BANNER -->
+  <div class="success-banner" id="success-banner">
+    <h2>Phase 0 Complete</h2>
+    <p>Ahmed has rated 3 consecutive plans 7/10 or above. Ready to move to Phase 1 — Launch.</p>
+  </div>
+
+  <!-- PHASES -->
+  <div class="phases">
+
+    <div class="phase-card active" id="phase0-card">
+      <div class="phase-head">
+        <div class="phase-left">
+          <div class="phase-icon icon-active" id="phase0-icon">0</div>
+          <div>
+            <div class="phase-name">Phase 0 — Prove It Works</div>
+            <div class="phase-time">Week 1–2</div>
+          </div>
+        </div>
+        <div class="phase-status status-active" id="phase0-status">In Progress</div>
+      </div>
+      <div class="phase-body">
+        <div class="criteria-label">Exit Criteria</div>
+        <div class="criteria-text">Ahmed rates 3 consecutive session plans <strong style="color:var(--green-light)">7/10 or above</strong></div>
+        <div class="progress-wrap">
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill" id="phase0-bar" style="width:0%"></div>
+          </div>
+          <div class="progress-info">
+            <span id="phase0-label">0 of 3 qualifying ratings</span>
+            <span id="phase0-pct">0%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="phase-card locked">
+      <div class="phase-head">
+        <div class="phase-left">
+          <div class="phase-icon icon-locked">1</div>
+          <div>
+            <div class="phase-name">Phase 1 — Launch &amp; First Users</div>
+            <div class="phase-time">Week 3–6</div>
+          </div>
+        </div>
+        <div class="phase-status status-locked">Locked</div>
+      </div>
+    </div>
+
+    <div class="phase-card locked">
+      <div class="phase-head">
+        <div class="phase-left">
+          <div class="phase-icon icon-locked">2</div>
+          <div>
+            <div class="phase-name">Phase 2 — Build the User Base</div>
+            <div class="phase-time">Month 2–5</div>
+          </div>
+        </div>
+        <div class="phase-status status-locked">Locked</div>
+      </div>
+    </div>
+
+    <div class="phase-card locked">
+      <div class="phase-head">
+        <div class="phase-left">
+          <div class="phase-icon icon-locked">3</div>
+          <div>
+            <div class="phase-name">Phase 3 — First Revenue</div>
+            <div class="phase-time">Month 5–8</div>
+          </div>
+        </div>
+        <div class="phase-status status-locked">Locked</div>
+      </div>
+    </div>
+
+    <div class="phase-card locked">
+      <div class="phase-head">
+        <div class="phase-left">
+          <div class="phase-icon icon-locked">4</div>
+          <div>
+            <div class="phase-name">Phase 4 — Grow &amp; Go International</div>
+            <div class="phase-time">Month 8–18</div>
+          </div>
+        </div>
+        <div class="phase-status status-locked">Locked</div>
+      </div>
+    </div>
+
+    <div class="phase-card locked">
+      <div class="phase-head">
+        <div class="phase-left">
+          <div class="phase-icon icon-locked">5</div>
+          <div>
+            <div class="phase-name">Phase 5 — Club Licenses &amp; New Sports</div>
+            <div class="phase-time">Year 2</div>
+          </div>
+        </div>
+        <div class="phase-status status-locked">Locked</div>
+      </div>
+    </div>
+
+    <div class="phase-card locked">
+      <div class="phase-head">
+        <div class="phase-left">
+          <div class="phase-icon icon-locked">★</div>
+          <div>
+            <div class="phase-name">Nirvana — The End State</div>
+            <div class="phase-time">Year 3+</div>
+          </div>
+        </div>
+        <div class="phase-status status-locked">Locked</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- SCORES COMPARISON -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:2.5rem;" class="scores-cols">
+
+    <div>
+      <div class="section-title" id="ratings-heading">Ahmed's Ratings <span id="consec-tag"></span></div>
+      <div id="ratings-container">
+        <div class="no-ratings">No ratings yet. Generate a session plan and have Ahmed rate it.</div>
+      </div>
+      <button class="btn-clear" id="clear-btn" onclick="clearRatings()" style="display:none">Clear all ratings</button>
+    </div>
+
+    <div>
+      <div class="section-title">AI Quality Checks</div>
+      <div id="evals-container">
+        <div class="no-ratings">No evaluations yet. Generate a session plan to run the auto quality check.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <style>
+    @media (max-width: 640px) { .scores-cols { grid-template-columns: 1fr !important; } }
+  </style>
+
+</div>
+
+<script>
+  function timeAgo(ts) {
+    const diff = Date.now() - new Date(ts).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1)   return 'just now';
+    if (mins < 60)  return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24)   return `${hrs}h ago`;
+    return `${Math.floor(hrs / 24)}d ago`;
+  }
+
+  function scoreClass(n) {
+    if (n >= 7) return 'score-high';
+    if (n >= 5) return 'score-mid';
+    return 'score-low';
+  }
+
+  function consecutiveHighRatings(ratings) {
+    let count = 0;
+    for (let i = ratings.length - 1; i >= 0; i--) {
+      if (ratings[i].rating >= 7) { count++; } else { break; }
+    }
+    return count;
+  }
+
+  function render() {
+    fetch('/ratings').then(r => r.json()).then(ratings => renderRatings(ratings));
+    fetch('/evaluations').then(r => r.json()).then(evals => renderEvals(evals));
+  }
+
+  function renderRatings(ratings) {
+    const container = document.getElementById('ratings-container');
+    const clearBtn  = document.getElementById('clear-btn');
+    const consec    = consecutiveHighRatings(ratings);
+    const phase0Done = consec >= 3;
+
+    // Update progress bar
+    const pct = Math.min(100, Math.round((consec / 3) * 100));
+    document.getElementById('phase0-bar').style.width = pct + '%';
+    document.getElementById('phase0-label').textContent = `${Math.min(consec, 3)} of 3 qualifying ratings`;
+    document.getElementById('phase0-pct').textContent = pct + '%';
+
+    // Consecutive badge
+    const tag = document.getElementById('consec-tag');
+    if (consec > 0) {
+      tag.innerHTML = `<span class="consec-badge">${consec} consecutive 7+</span>`;
+    } else {
+      tag.innerHTML = '';
+    }
+
+    // Phase 0 complete
+    if (phase0Done) {
+      document.getElementById('success-banner').style.display = 'block';
+      document.getElementById('phase0-card').style.borderColor = 'var(--green-light)';
+      document.getElementById('phase0-status').textContent = 'Complete';
+      document.getElementById('phase0-status').className = 'phase-status status-done';
+      document.getElementById('phase0-icon').textContent = '✓';
+      document.getElementById('phase0-icon').className = 'phase-icon icon-done';
+    }
+
+    if (ratings.length === 0) {
+      container.innerHTML = '<div class="no-ratings">No ratings yet. Generate a session plan and have Ahmed rate it.</div>';
+      clearBtn.style.display = 'none';
+      return;
+    }
+
+    clearBtn.style.display = 'inline-block';
+
+    const rows = [...ratings].reverse().map((r, i) => {
+      const isPass = r.rating >= 7;
+      return `
+        <div class="rating-row ${isPass ? 'pass' : ''}">
+          <div class="rating-score ${scoreClass(r.rating)}">${r.rating}</div>
+          <div class="rating-details">
+            <div class="rating-meta">${r.age_group || '—'} · ${r.focus || '—'}</div>
+            ${r.what_worked ? `<div class="rating-worked">Worked: ${r.what_worked}</div>` : ''}
+            ${r.what_wrong  ? `<div class="rating-wrong">Issue: ${r.what_wrong}</div>`   : ''}
+          </div>
+          <div class="rating-date">${timeAgo(r.timestamp)}</div>
+        </div>`;
+    }).join('');
+
+    container.innerHTML = `<div class="ratings-grid">${rows}</div>`;
+  }
+
+  function renderEvals(evals) {
+    const container = document.getElementById('evals-container');
+    if (!evals.length) return;
+    const rows = [...evals].reverse().map(e => {
+      const sc = e.overall_score;
+      const cls = sc >= 7 ? 'score-high' : sc >= 5 ? 'score-mid' : 'score-low';
+      return `
+        <div class="rating-row">
+          <div class="rating-score ${cls}">${sc.toFixed(1)}</div>
+          <div class="rating-details">
+            <div class="rating-meta">${e.age_group || '—'} · ${e.focus || '—'} · ${e.players} players</div>
+            <div class="rating-worked">${e.overall_comment}</div>
+            <div style="margin-top:0.4rem;display:flex;flex-wrap:wrap;gap:0.3rem;">
+              ${e.criteria.map(c => `<span style="font-size:0.7rem;padding:2px 6px;border-radius:4px;background:var(--bg);border:1px solid var(--border);color:var(--muted)">${c.name}: ${c.score}</span>`).join('')}
+            </div>
+          </div>
+          <div class="rating-date">${timeAgo(e.timestamp)}</div>
+        </div>`;
+    }).join('');
+    container.innerHTML = `<div class="ratings-grid">${rows}</div>`;
+  }
+
+  function clearRatings() {
+    if (confirm('Clear all of Ahmed\'s ratings?')) {
+      fetch('/ratings/clear', { method: 'POST' }).then(() => render());
+    }
+  }
+
+  render();
+</script>
+
+</body>
+</html>

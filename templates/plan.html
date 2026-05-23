@@ -1,0 +1,1883 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CoachAI — Business Plan</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green: #16a34a;
+      --green-light: #22c55e;
+      --green-dim: #14532d;
+      --bg: #080c08;
+      --bg2: #0f1a0f;
+      --bg3: #141f14;
+      --border: #1f2d1f;
+      --text: #e8f5e8;
+      --muted: #6b8c6b;
+      --white: #f0faf0;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      font-size: 16px;
+    }
+
+    /* NAV */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(8, 12, 8, 0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 56px;
+    }
+    .nav-brand {
+      font-weight: 700;
+      font-size: 1rem;
+      color: var(--green-light);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .nav-links {
+      display: flex;
+      gap: 1.5rem;
+      list-style: none;
+    }
+    .nav-links a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--green-light); }
+
+    /* SECTIONS */
+    section {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 80px 2rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .label {
+      display: inline-block;
+      font-size: 0.7rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--green-light);
+      font-weight: 600;
+      margin-bottom: 1rem;
+      padding: 4px 10px;
+      border: 1px solid var(--green-dim);
+      border-radius: 4px;
+    }
+
+    h1 {
+      font-size: clamp(2.2rem, 5vw, 3.8rem);
+      font-weight: 800;
+      line-height: 1.1;
+      color: var(--white);
+      letter-spacing: -0.02em;
+    }
+
+    h2 {
+      font-size: clamp(1.5rem, 3vw, 2.2rem);
+      font-weight: 700;
+      color: var(--white);
+      letter-spacing: -0.01em;
+      margin-bottom: 0.5rem;
+    }
+
+    h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--white);
+      margin-bottom: 0.5rem;
+    }
+
+    p {
+      color: var(--text);
+      max-width: 680px;
+      line-height: 1.75;
+    }
+
+    /* HERO */
+    #hero {
+      min-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      border-bottom: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+    }
+    #hero::before {
+      content: '';
+      position: absolute;
+      top: -200px;
+      right: -200px;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(22, 163, 74, 0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero-subtitle {
+      font-size: 1.2rem;
+      color: var(--muted);
+      margin: 1.5rem 0 2.5rem;
+      max-width: 600px;
+      line-height: 1.7;
+    }
+    .hero-stats {
+      display: flex;
+      gap: 3rem;
+      margin-top: 3rem;
+      flex-wrap: wrap;
+    }
+    .stat {
+      display: flex;
+      flex-direction: column;
+    }
+    .stat-number {
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: var(--green-light);
+      line-height: 1;
+    }
+    .stat-label {
+      font-size: 0.78rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-top: 4px;
+    }
+
+    /* CARDS */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      margin-top: 2.5rem;
+    }
+    .card {
+      background: var(--bg2);
+      padding: 1.8rem;
+    }
+    .card-icon {
+      width: 36px;
+      height: 36px;
+      background: var(--green-dim);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1rem;
+      font-size: 1.1rem;
+    }
+
+    /* PROBLEM BLOCK */
+    .pain-block {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 2rem;
+      margin-top: 1.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .pain-block::before {
+      content: '"';
+      position: absolute;
+      top: -20px;
+      left: 1.5rem;
+      font-size: 8rem;
+      color: var(--green-dim);
+      font-family: Georgia, serif;
+      line-height: 1;
+    }
+    .pain-text {
+      font-size: 1.15rem;
+      font-style: italic;
+      color: var(--white);
+      line-height: 1.8;
+      padding-top: 1rem;
+    }
+    .pain-attribution {
+      margin-top: 1rem;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    /* COMPARISON TABLE */
+    .compare-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 2rem;
+      font-size: 0.9rem;
+    }
+    .compare-table th {
+      text-align: left;
+      padding: 0.75rem 1rem;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+    }
+    .compare-table td {
+      padding: 0.9rem 1rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+    }
+    .compare-table tr:last-child td { border-bottom: none; }
+    .compare-table tr.highlight td { background: rgba(22, 163, 74, 0.07); }
+    .compare-table tr.highlight td:first-child { color: var(--green-light); font-weight: 600; }
+    .yes { color: var(--green-light); font-weight: 600; }
+    .no { color: #ef4444; }
+    .partial { color: #f59e0b; }
+
+    /* GROWTH PHASES */
+    .phases {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      margin-top: 2rem;
+    }
+    .phase {
+      display: grid;
+      grid-template-columns: 140px 1fr;
+      gap: 2rem;
+      padding: 2rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .phase:last-child { border-bottom: none; }
+    .phase-label {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+    .phase-number {
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .phase-name {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--green-light);
+    }
+    .phase-timeline {
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+    .phase-content h3 {
+      margin-bottom: 0.75rem;
+    }
+    .bullet-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+    }
+    .bullet-list li {
+      color: var(--text);
+      font-size: 0.9rem;
+      padding-left: 1.2rem;
+      position: relative;
+    }
+    .bullet-list li::before {
+      content: '→';
+      position: absolute;
+      left: 0;
+      color: var(--green);
+    }
+
+    /* REVENUE */
+    .revenue-tiers {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+    .tier {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.5rem;
+    }
+    .tier.featured {
+      border-color: var(--green);
+      background: rgba(22, 163, 74, 0.06);
+    }
+    .tier-name {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+    }
+    .tier-price {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--white);
+      line-height: 1;
+    }
+    .tier-price span {
+      font-size: 0.9rem;
+      font-weight: 400;
+      color: var(--muted);
+    }
+    .tier-features {
+      list-style: none;
+      margin-top: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+    .tier-features li {
+      font-size: 0.85rem;
+      color: var(--text);
+    }
+    .tier-features li::before {
+      content: '✓ ';
+      color: var(--green-light);
+    }
+
+    /* PROJECTIONS */
+    .projection-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      margin-top: 2rem;
+    }
+    .proj-cell {
+      background: var(--bg2);
+      padding: 1.5rem;
+    }
+    .proj-period {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      margin-bottom: 0.75rem;
+    }
+    .proj-users {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: var(--white);
+      line-height: 1;
+    }
+    .proj-paid {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-top: 0.3rem;
+    }
+    .proj-mrr {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--green-light);
+      margin-top: 0.5rem;
+    }
+
+    /* PRODUCT MOCK */
+    .mock-window {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-top: 2.5rem;
+    }
+    .mock-bar {
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      padding: 0.75rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .mock-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+    .mock-url {
+      margin-left: 0.5rem;
+      font-size: 0.75rem;
+      color: var(--muted);
+      font-family: monospace;
+    }
+    .mock-body {
+      padding: 1.5rem;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+    .mock-input-section h4 {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 1rem;
+    }
+    .mock-field {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.6rem 0.8rem;
+      margin-bottom: 0.6rem;
+      font-size: 0.82rem;
+      color: var(--text);
+      width: 100%;
+    }
+    .mock-field.filled {
+      border-color: var(--green-dim);
+      color: var(--white);
+    }
+    .mock-btn {
+      background: var(--green);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 0.65rem 1.2rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-top: 0.5rem;
+      width: 100%;
+      cursor: pointer;
+    }
+    .mock-output-section h4 {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 1rem;
+    }
+    .mock-plan-block {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.9rem;
+      margin-bottom: 0.6rem;
+    }
+    .mock-plan-title {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--green-light);
+      margin-bottom: 0.3rem;
+    }
+    .mock-plan-text {
+      font-size: 0.8rem;
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    /* WHY CLAUDE */
+    .tech-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+    .tech-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.4rem;
+    }
+    .tech-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--white);
+      margin-bottom: 0.4rem;
+    }
+    .tech-desc {
+      font-size: 0.82rem;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    /* HOW TO PUBLISH */
+    .publish-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      margin-top: 2rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .publish-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 1.5rem;
+      padding: 1.4rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg2);
+    }
+    .publish-step:last-child { border-bottom: none; }
+    .step-num {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--green-light);
+      background: var(--green-dim);
+      border-radius: 50%;
+      width: 26px;
+      height: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .step-content h3 { font-size: 0.95rem; margin-bottom: 0.3rem; }
+    .step-content p { font-size: 0.85rem; color: var(--muted); line-height: 1.6; max-width: none; }
+
+    /* ROADMAP */
+    .roadmap {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      margin-top: 2.5rem;
+      position: relative;
+    }
+    .roadmap::before {
+      content: '';
+      position: absolute;
+      left: 18px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: linear-gradient(to bottom, var(--green-dim), var(--green-light));
+    }
+    .rm-phase {
+      display: grid;
+      grid-template-columns: 40px 1fr;
+      gap: 1.5rem;
+      padding-bottom: 2.5rem;
+      position: relative;
+    }
+    .rm-phase:last-child { padding-bottom: 0; }
+    .rm-dot {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 800;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 1;
+      border: 2px solid;
+    }
+    .rm-dot.p0  { background: #0f1a0f; border-color: #374937; color: var(--muted); }
+    .rm-dot.p1  { background: #0f1a0f; border-color: #4a6b4a; color: #6b8c6b; }
+    .rm-dot.p2  { background: #0f2a0f; border-color: #16a34a; color: #16a34a; }
+    .rm-dot.p3  { background: #0a2a0a; border-color: #16a34a; color: #22c55e; }
+    .rm-dot.p4  { background: #082008; border-color: #22c55e; color: #22c55e; }
+    .rm-dot.p5  { background: #061806; border-color: #4ade80; color: #4ade80; }
+    .rm-dot.nirvana { background: var(--green); border-color: var(--green-light); color: #fff; font-size: 1rem; }
+    .rm-content {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.6rem;
+      margin-top: -4px;
+    }
+    .rm-content.nirvana-card {
+      border-color: var(--green);
+      background: rgba(22,163,74,0.07);
+    }
+    .rm-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 0.75rem;
+      flex-wrap: wrap;
+    }
+    .rm-title { font-size: 1.05rem; font-weight: 700; color: var(--white); }
+    .rm-time {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--green-light);
+      background: var(--green-dim);
+      padding: 3px 8px;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+    .rm-goal {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 1.1rem;
+      line-height: 1.6;
+    }
+    .rm-cols {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 0.8rem;
+    }
+    .rm-col-title {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--green);
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+    }
+    .rm-col ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+    .rm-col ul li {
+      font-size: 0.8rem;
+      color: var(--text);
+      padding-left: 1rem;
+      position: relative;
+      line-height: 1.4;
+    }
+    .rm-col ul li::before { content: '·'; position: absolute; left: 0; color: var(--green); font-weight: 700; }
+    .rm-milestone {
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }
+    .rm-milestone-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+    .rm-milestone-val {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--green-light);
+    }
+    .nirvana-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 1rem;
+      margin-top: 1.2rem;
+    }
+    .nirvana-stat {
+      text-align: center;
+      padding: 1rem;
+      background: rgba(22,163,74,0.08);
+      border: 1px solid var(--green-dim);
+      border-radius: 8px;
+    }
+    .nirvana-stat-num {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: var(--green-light);
+      line-height: 1;
+    }
+    .nirvana-stat-label {
+      font-size: 0.72rem;
+      color: var(--muted);
+      margin-top: 0.3rem;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+    }
+
+    /* RISKS */
+    .risk-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      margin-top: 2rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .risk-item {
+      display: grid;
+      grid-template-columns: 90px 1fr;
+      gap: 1.5rem;
+      padding: 1.4rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg2);
+      align-items: start;
+    }
+    .risk-item:last-child { border-bottom: none; }
+    .risk-badge {
+      display: inline-block;
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      padding: 4px 8px;
+      border-radius: 4px;
+      margin-top: 3px;
+    }
+    .risk-badge.high { background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); }
+    .risk-badge.medium { background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); }
+    .risk-badge.low { background: rgba(107,140,107,0.2); color: var(--muted); border: 1px solid var(--border); }
+    .risk-body h3 { font-size: 0.95rem; margin-bottom: 0.35rem; }
+    .risk-body p { font-size: 0.85rem; color: var(--muted); line-height: 1.6; max-width: none; }
+    .risk-fix {
+      margin-top: 0.6rem;
+      font-size: 0.82rem;
+      color: var(--green-light);
+      padding-left: 1rem;
+      border-left: 2px solid var(--green-dim);
+    }
+
+    /* TEAM */
+    .team-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+    .team-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.6rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .team-card:first-child { border-color: var(--green); background: rgba(22, 163, 74, 0.05); }
+    .team-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--green-dim);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      margin-bottom: 0.5rem;
+    }
+    .team-name {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--white);
+    }
+    .team-role {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--green-light);
+      font-weight: 600;
+    }
+    .team-desc {
+      font-size: 0.83rem;
+      color: var(--muted);
+      line-height: 1.6;
+      margin-top: 0.3rem;
+    }
+    .team-owns {
+      margin-top: 0.75rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid var(--border);
+    }
+    .team-owns-label {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      margin-bottom: 0.4rem;
+    }
+    .team-owns-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+    .team-owns-list li {
+      font-size: 0.8rem;
+      color: var(--text);
+      padding-left: 1rem;
+      position: relative;
+    }
+    .team-owns-list li::before { content: '→'; position: absolute; left: 0; color: var(--green); }
+
+    .discussion-box {
+      background: var(--bg2);
+      border: 1px solid var(--green-dim);
+      border-radius: 8px;
+      padding: 1.5rem 1.8rem;
+      margin-top: 2.5rem;
+    }
+    .discussion-box h3 {
+      font-size: 0.85rem;
+      color: var(--green-light);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 1rem;
+    }
+    .discussion-questions {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.7rem;
+    }
+    .discussion-questions li {
+      font-size: 0.9rem;
+      color: var(--text);
+      padding-left: 1.5rem;
+      position: relative;
+      line-height: 1.5;
+    }
+    .discussion-questions li::before {
+      content: '?';
+      position: absolute;
+      left: 0;
+      color: var(--green-light);
+      font-weight: 700;
+    }
+
+    /* FOOTER */
+    footer {
+      text-align: center;
+      padding: 3rem 2rem;
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    @media (max-width: 640px) {
+      .mock-body { grid-template-columns: 1fr; }
+      .phase { grid-template-columns: 1fr; gap: 0.5rem; }
+      .hero-stats { gap: 2rem; }
+      .nav-links { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand">CoachAI</div>
+  <ul class="nav-links">
+    <li><a href="#problem">Problem</a></li>
+    <li><a href="#solution">Solution</a></li>
+    <li><a href="#diff">Edge</a></li>
+    <li><a href="#growth">Growth</a></li>
+    <li><a href="#money">Revenue</a></li>
+    <li><a href="#publish">Launch</a></li>
+    <li><a href="#roadmap">Roadmap</a></li>
+    <li><a href="#risks">Risks</a></li>
+    <li><a href="#team">Team</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="label">Business Plan — 2026</div>
+  <h1>Turn any parent into<br>a confident coach.</h1>
+  <p class="hero-subtitle">
+    An AI-powered session planner for youth soccer coaches — built for the 3 million volunteer parents who show up every Saturday with no training, no tools, and no time.
+  </p>
+
+  <div class="hero-stats">
+    <div class="stat">
+      <span class="stat-number">3M+</span>
+      <span class="stat-label">Youth coaches in the US</span>
+    </div>
+    <div class="stat">
+      <span class="stat-number">80%</span>
+      <span class="stat-label">Have no formal training</span>
+    </div>
+    <div class="stat">
+      <span class="stat-number">45 min</span>
+      <span class="stat-label">Avg. prep time per session</span>
+    </div>
+    <div class="stat">
+      <span class="stat-number">$0</span>
+      <span class="stat-label">Tools designed for them</span>
+    </div>
+  </div>
+</section>
+
+<!-- PROBLEM -->
+<section id="problem">
+  <div class="label">The Problem</div>
+  <h2>Every week, millions of coaches are on their own.</h2>
+  <p style="margin-top:1rem;">
+    Youth soccer runs on volunteers. Most coaches are parents who raised their hand at a sign-up sheet. They care deeply, but they have no coaching background, no support, and no good tools. Every week they face the same anxiety.
+  </p>
+
+  <div class="pain-block">
+    <p class="pain-text">
+      "I spent 40 minutes on YouTube trying to find drills for my U10s. Half the kids didn't understand the instructions. The session fell apart by the third drill. I felt terrible the whole drive home."
+    </p>
+    <p class="pain-attribution">— Volunteer parent coach, every week</p>
+  </div>
+
+  <div class="card-grid" style="margin-top:2.5rem;">
+    <div class="card">
+      <div class="card-icon">⏱</div>
+      <h3>Time they don't have</h3>
+      <p style="font-size:0.88rem;color:var(--muted);">Between jobs and family, coaches spend 45+ minutes cobbling together a session from random YouTube videos and blog posts.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">🎯</div>
+      <h3>Generic, not personal</h3>
+      <p style="font-size:0.88rem;color:var(--muted);">Drills found online aren't tailored to their squad size, age group, skill level, or what went wrong last week.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">📉</div>
+      <h3>No feedback loop</h3>
+      <p style="font-size:0.88rem;color:var(--muted);">Coaches repeat the same drills because they don't know what to try next. Kids stagnate and lose interest.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">💸</div>
+      <h3>Pro tools built for pros</h3>
+      <p style="font-size:0.88rem;color:var(--muted);">Existing coaching software costs $15-30/month and assumes you have a UEFA license. A volunteer coach won't pay that.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SOLUTION -->
+<section id="solution">
+  <div class="label">The Solution</div>
+  <h2>A complete session plan in under 2 minutes.</h2>
+  <p style="margin-top:1rem;">
+    The coach tells us about their team and what they want to work on. We generate a complete, structured 60-90 minute session — warmup, drills, small-sided game, cooldown — with clear instructions and the reasoning behind each drill. No coaching degree needed.
+  </p>
+
+  <div class="mock-window">
+    <div class="mock-bar">
+      <div class="mock-dot" style="background:#ef4444;"></div>
+      <div class="mock-dot" style="background:#f59e0b;"></div>
+      <div class="mock-dot" style="background:#22c55e;"></div>
+      <span class="mock-url">coachaisoccer.com/plan</span>
+    </div>
+    <div class="mock-body">
+      <div class="mock-input-section">
+        <h4>Your Team</h4>
+        <div class="mock-field filled">Age group: Under 10 (U10)</div>
+        <div class="mock-field filled">Players today: 14</div>
+        <div class="mock-field filled">Session length: 75 minutes</div>
+        <div class="mock-field filled">Focus: Passing &amp; movement</div>
+        <div class="mock-field filled">Last week: Struggled with first touch</div>
+        <div class="mock-field">Equipment: Cones, balls, bibs</div>
+        <button class="mock-btn">Generate Session Plan</button>
+      </div>
+      <div class="mock-output-section">
+        <h4>Your Session — U10, 75 min</h4>
+        <div class="mock-plan-block">
+          <div class="mock-plan-title">Warmup — 10 min</div>
+          <div class="mock-plan-text">Rondo 4v2 in 8x8 grid. Focus on soft first touch before passing. Why: builds comfort under light pressure before the main session.</div>
+        </div>
+        <div class="mock-plan-block">
+          <div class="mock-plan-title">Drill 1 — 20 min</div>
+          <div class="mock-plan-text">Pass and move gates drill. Players pass through cones and follow their pass. Emphasize receiving on the back foot.</div>
+        </div>
+        <div class="mock-plan-block">
+          <div class="mock-plan-title">Small-sided game — 25 min</div>
+          <div class="mock-plan-text">7v7. Award bonus points for combinations of 3+ passes. Freeze and correct first-touch errors in real time.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DIFFERENTIATION -->
+<section id="diff">
+  <div class="label">Our Edge</div>
+  <h2>Nothing else does this for this price.</h2>
+  <p style="margin-top:1rem;">
+    Every existing tool falls into one of two camps: too complex and expensive for volunteers, or too generic to be useful. We sit in the gap nobody has filled.
+  </p>
+
+  <table class="compare-table">
+    <thead>
+      <tr>
+        <th>Tool</th>
+        <th>AI-Generated</th>
+        <th>Personalized</th>
+        <th>Explains Why</th>
+        <th>Price</th>
+        <th>Built for Volunteers</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="highlight">
+        <td>CoachAI (us)</td>
+        <td class="yes">Yes</td>
+        <td class="yes">Yes</td>
+        <td class="yes">Yes</td>
+        <td class="yes">Free / $7/mo</td>
+        <td class="yes">Yes</td>
+      </tr>
+      <tr>
+        <td>SportsSessionPlanner</td>
+        <td class="no">No</td>
+        <td class="partial">Templates only</td>
+        <td class="no">No</td>
+        <td class="no">$15/mo</td>
+        <td class="no">No</td>
+      </tr>
+      <tr>
+        <td>CoachNote</td>
+        <td class="no">No</td>
+        <td class="no">No</td>
+        <td class="no">No</td>
+        <td class="no">$12/mo</td>
+        <td class="no">No</td>
+      </tr>
+      <tr>
+        <td>YouTube / Google</td>
+        <td class="no">No</td>
+        <td class="no">No</td>
+        <td class="partial">Sometimes</td>
+        <td class="yes">Free</td>
+        <td class="partial">Partially</td>
+      </tr>
+      <tr>
+        <td>ChatGPT directly</td>
+        <td class="yes">Yes</td>
+        <td class="partial">If you know how</td>
+        <td class="partial">If you know how</td>
+        <td class="partial">$20/mo (all use)</td>
+        <td class="no">No</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="card-grid" style="margin-top:2.5rem;">
+    <div class="card">
+      <h3>Contextual reasoning</h3>
+      <p style="font-size:0.85rem;color:var(--muted);margin-top:0.3rem;">The AI considers your specific squad, what struggled last week, available equipment, and session length — and builds for you, not from a template.</p>
+    </div>
+    <div class="card">
+      <h3>Explains the why</h3>
+      <p style="font-size:0.85rem;color:var(--muted);margin-top:0.3rem;">Every drill includes reasoning — so coaches understand and can actually teach it confidently rather than just reading instructions aloud.</p>
+    </div>
+    <div class="card">
+      <h3>Priced for volunteers</h3>
+      <p style="font-size:0.85rem;color:var(--muted);margin-top:0.3rem;">Free tier is genuinely useful. Paid tier is cheaper than a Spotify subscription. Volunteer coaches will upgrade without a second thought.</p>
+    </div>
+  </div>
+</section>
+
+<!-- GROWTH -->
+<section id="growth">
+  <div class="label">Growth Strategy</div>
+  <h2>First: build a huge free user base.</h2>
+  <p style="margin-top:1rem;">
+    We do not sell to users — they find us. The plan is to saturate every channel where coaches go looking for help, make the free product genuinely valuable, and let word of mouth and SEO do the work.
+  </p>
+
+  <div class="phases">
+
+    <div class="phase">
+      <div class="phase-label">
+        <span class="phase-number">Phase 01</span>
+        <span class="phase-name">Free &amp; Viral</span>
+        <span class="phase-timeline">Months 1–4</span>
+      </div>
+      <div class="phase-content">
+        <h3>Goal: 10,000 registered users. Zero paid marketing.</h3>
+        <p style="font-size:0.88rem;color:var(--muted);">The free tier is fully generous. No credit card, no watermark, no artificial limits on quality. The product earns trust.</p>
+        <ul class="bullet-list">
+          <li>SEO: publish 50+ targeted articles — "U8 soccer drills", "how to coach kids soccer", "youth soccer warmup ideas" — Claude writes all of them</li>
+          <li>Reddit: contribute genuinely in r/bootroom and r/SoccerCoaching, share the tool naturally</li>
+          <li>Facebook groups: 50+ "Youth Soccer Coaches" groups with 100k+ total members</li>
+          <li>Shareable plan links: every generated plan has a public share URL — coaches send to co-coaches, parents, league admins</li>
+          <li>Product Hunt launch: initial spike, backlink, credibility</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-label">
+        <span class="phase-number">Phase 02</span>
+        <span class="phase-name">Convert</span>
+        <span class="phase-timeline">Months 4–8</span>
+      </div>
+      <div class="phase-content">
+        <h3>Goal: 5–10% of users upgrade to paid.</h3>
+        <p style="font-size:0.88rem;color:var(--muted);">Introduce the free tier limit (3 sessions/month) once users are hooked. Paid unlocks unlimited plans, season planner, and drill history.</p>
+        <ul class="bullet-list">
+          <li>Email sequence: gentle nudge after 3rd session plan generated</li>
+          <li>Season planner feature: high value, paid only — plan the full 12-week season not just one session</li>
+          <li>Player development tracker: note individual player progress over time (paid)</li>
+          <li>Annual plan discount: $60/year vs $84 billed monthly — improves cash flow</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-label">
+        <span class="phase-number">Phase 03</span>
+        <span class="phase-name">Expand</span>
+        <span class="phase-timeline">Month 9+</span>
+      </div>
+      <div class="phase-content">
+        <h3>Goal: club licenses + new sports.</h3>
+        <p style="font-size:0.88rem;color:var(--muted);">Once the soccer product is proven, expand the business model and the sport library — your family plays skiing and chess too.</p>
+        <ul class="bullet-list">
+          <li>Club/league licenses: one admin account, all coaches in the club get Pro — $50-80/month per club</li>
+          <li>Ski training planner: race prep, fitness, dryland training — smaller market but near-zero competition</li>
+          <li>Branded white-label: sell to national youth soccer associations</li>
+          <li>Sponsorships: soccer equipment brands (Adidas, Nike, Puma) pay to reach coaches at scale</li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- REVENUE -->
+<section id="money">
+  <div class="label">Monetisation</div>
+  <h2>Multiple ways to earn. Zero sales calls.</h2>
+  <p style="margin-top:1rem;">
+    Revenue comes from subscriptions — individual coaches and club licenses. The model is simple, transparent, and designed so users upgrade without any conversation.
+  </p>
+
+  <div class="revenue-tiers">
+    <div class="tier">
+      <div class="tier-name">Free</div>
+      <div class="tier-price">$0</div>
+      <ul class="tier-features">
+        <li>3 session plans per month</li>
+        <li>Basic drill library</li>
+        <li>Mobile-friendly output</li>
+        <li>Shareable plan link</li>
+      </ul>
+    </div>
+    <div class="tier featured">
+      <div class="tier-name">Pro Coach</div>
+      <div class="tier-price">$7 <span>/month</span></div>
+      <ul class="tier-features">
+        <li>Unlimited session plans</li>
+        <li>Full drill library</li>
+        <li>Season planner (12-week)</li>
+        <li>Player development notes</li>
+        <li>Printable PDF sessions</li>
+        <li>Session history</li>
+      </ul>
+    </div>
+    <div class="tier">
+      <div class="tier-name">Club License</div>
+      <div class="tier-price">$60 <span>/month</span></div>
+      <ul class="tier-features">
+        <li>All coaches in club get Pro</li>
+        <li>Admin dashboard</li>
+        <li>Shared drill library</li>
+        <li>Club branding on plans</li>
+        <li>Up to 30 coaches</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="projection-grid">
+    <div class="proj-cell">
+      <div class="proj-period">Month 6</div>
+      <div class="proj-users">8,000</div>
+      <div class="proj-paid">~500 paid users</div>
+      <div class="proj-mrr">$3,500 MRR</div>
+    </div>
+    <div class="proj-cell">
+      <div class="proj-period">Month 12</div>
+      <div class="proj-users">25,000</div>
+      <div class="proj-paid">~1,500 paid + 10 clubs</div>
+      <div class="proj-mrr">$11,000 MRR</div>
+    </div>
+    <div class="proj-cell">
+      <div class="proj-period">Month 18</div>
+      <div class="proj-users">60,000</div>
+      <div class="proj-paid">~4,000 paid + 30 clubs</div>
+      <div class="proj-mrr">$29,800 MRR</div>
+    </div>
+    <div class="proj-cell">
+      <div class="proj-period">Year 3</div>
+      <div class="proj-users">200,000</div>
+      <div class="proj-paid">~15,000 paid + 100 clubs</div>
+      <div class="proj-mrr">$111,000 MRR</div>
+    </div>
+  </div>
+
+  <p style="margin-top:1.5rem;font-size:0.82rem;color:var(--muted);">
+    Projections assume 5–8% free-to-paid conversion (industry average for niche tools is 3–7%). Cost per AI generation: ~$0.02 via Claude API. At 1,000 paid users generating 4 plans/month the AI cost is ~$80/month. Margins are very high.
+  </p>
+</section>
+
+<!-- WHY CLAUDE -->
+<section id="tech">
+  <div class="label">Why This Works Technically</div>
+  <h2>Claude is what makes this possible.</h2>
+  <p style="margin-top:1rem;">
+    Three years ago this product could not have been built cheaply. Claude's reasoning capability is what turns a generic drill generator into something that actually understands context and produces useful coaching output.
+  </p>
+
+  <div class="tech-grid">
+    <div class="tech-card">
+      <div class="tech-title">Contextual reasoning</div>
+      <div class="tech-desc">Claude doesn't pick from a template. It reasons through the session structure based on all the inputs — age, squad size, last week's problem, focus area — and generates something genuinely tailored.</div>
+    </div>
+    <div class="tech-card">
+      <div class="tech-title">Very low cost per generation</div>
+      <div class="tech-desc">A full session plan costs ~$0.02 in API calls. With a user generating 4 plans/month, the variable cost per user is $0.08/month. The margin on a $7 subscription is exceptional.</div>
+    </div>
+    <div class="tech-card">
+      <div class="tech-title">Quality that builds trust</div>
+      <div class="tech-desc">The output explains the why behind every drill. This is what keeps users coming back — they're not just getting a plan, they're learning to coach better over time.</div>
+    </div>
+    <div class="tech-card">
+      <div class="tech-title">Fast to iterate</div>
+      <div class="tech-desc">When we want to improve quality — add age-specific drill libraries, fix an edge case — we adjust the prompt. No retraining, no ML pipeline. Ship in hours.</div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW TO PUBLISH -->
+<section id="publish">
+  <div class="label">How to Launch</div>
+  <h2>Ship fast. Let the market validate.</h2>
+  <p style="margin-top:1rem;">
+    The goal is to get real coaches using a working product as fast as possible — before spending time on polish. These are the steps, in order.
+  </p>
+
+  <div class="publish-steps">
+    <div class="publish-step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <h3>Build the MVP — session plan generator only</h3>
+        <p>One input form, one output page. No accounts, no database. Just the core generation flow. Get this live in a week to prove the concept works and people find it useful.</p>
+      </div>
+    </div>
+    <div class="publish-step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <h3>Pick a domain and deploy</h3>
+        <p>Something like coachaisoccer.com or youthcoachplan.com. Deploy on Vercel (free tier). Claude API handles all generation. Total monthly infrastructure cost to start: under $20.</p>
+      </div>
+    </div>
+    <div class="publish-step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <h3>Post in 3 Reddit communities</h3>
+        <p>r/bootroom, r/SoccerCoaching, r/youth_soccer. Write an honest "I built this for volunteer coaches, would love feedback" post. Do not pitch. First real users and first real feedback come from here.</p>
+      </div>
+    </div>
+    <div class="publish-step">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <h3>Start the SEO content machine</h3>
+        <p>Use Claude to write 2 targeted articles per week. Target searches like "U8 soccer drills for beginners", "youth soccer session plan template", "how to coach 6 year olds soccer". These compound over 3-6 months into significant free traffic.</p>
+      </div>
+    </div>
+    <div class="publish-step">
+      <div class="step-num">5</div>
+      <div class="step-content">
+        <h3>Add accounts + free tier limit at 1,000 users</h3>
+        <p>Once we know people want it, add user accounts, session history, and introduce the 3 plans/month free limit. Only at this stage introduce Stripe for payments.</p>
+      </div>
+    </div>
+    <div class="publish-step">
+      <div class="step-num">6</div>
+      <div class="step-content">
+        <h3>Launch on Product Hunt</h3>
+        <p>Once the product has early testimonials and the paid tier is live. Product Hunt drives an initial spike in signups, backlinks, and press — all of which feed the SEO flywheel.</p>
+      </div>
+    </div>
+    <div class="publish-step">
+      <div class="step-num">7</div>
+      <div class="step-content">
+        <h3>Reach out to youth soccer leagues directly</h3>
+        <p>Not sales calls — a single email to league admins offering free club access for the season in exchange for a testimonial. Convert the best ones to paying club licenses afterward.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ROADMAP -->
+<section id="roadmap">
+  <div class="label">Buildout Plan</div>
+  <h2>From zero to nirvana — every step.</h2>
+  <p style="margin-top:1rem;">
+    This is the full journey. No step is skipped, no phase is rushed. Each phase has a clear goal, what gets built, who does what, and what success looks like before moving on.
+  </p>
+
+  <div class="roadmap">
+
+    <!-- PHASE 0 -->
+    <div class="rm-phase">
+      <div class="rm-dot p0">0</div>
+      <div class="rm-content">
+        <div class="rm-header">
+          <div class="rm-title">Phase 0 — Prove It Works</div>
+          <div class="rm-time">Week 1–2</div>
+        </div>
+        <p class="rm-goal">Before building anything public, prove that Claude can generate session plans good enough that Ahmed would actually use them. Nothing is live. This is just testing the idea.</p>
+        <div class="rm-cols">
+          <div class="rm-col">
+            <div class="rm-col-title">Mohsin builds</div>
+            <ul>
+              <li>Simple local HTML form — age group, players, duration, focus area</li>
+              <li>Claude API connected to generate a session plan</li>
+              <li>Nothing deployed, runs on laptop only</li>
+            </ul>
+          </div>
+          <div class="rm-col">
+            <div class="rm-col-title">Ahmed does</div>
+            <ul>
+              <li>Read every generated plan</li>
+              <li>Score it: would a real coach use this?</li>
+              <li>Identify what feels wrong or fake</li>
+            </ul>
+          </div>
+          <div class="rm-col">
+            <div class="rm-col-title">Safiya does</div>
+            <ul>
+              <li>Research 10 competitors</li>
+              <li>List what they charge</li>
+              <li>Find the gaps they miss</li>
+            </ul>
+          </div>
+        </div>
+        <div class="rm-milestone">
+          <span class="rm-milestone-label">Exit criteria</span>
+          <span class="rm-milestone-val">Ahmed rates 3 consecutive plans 7/10 or above</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- PHASE 1 -->
+    <div class="rm-phase">
+      <div class="rm-dot p1">1</div>
+      <div class="rm-content">
+        <div class="rm-header">
+          <div class="rm-title">Phase 1 — Launch &amp; First Users</div>
+          <div class="rm-time">Week 3–6</div>
+        </div>
+        <p class="rm-goal">Get the product live on the internet with a real domain. No accounts, no payments — just the session generator. Share it in communities and get the first 100 real users to try it.</p>
+        <div class="rm-cols">
+          <div class="rm-col">
+            <div class="rm-col-title">Mohsin builds</div>
+            <ul>
+              <li>Clean web app deployed on Vercel</li>
+              <li>Custom domain (e.g. coachaisoccer.com)</li>
+              <li>Session output formatted and printable</li>
+              <li>Shareable plan link for every session</li>
+              <li>Email capture on the homepage</li>
+            </ul>
+          </div>
+          <div class="rm-col">
+            <div class="rm-col-title">Safiya does</div>
+            <ul>
+              <li>Post honestly in r/bootroom and r/SoccerCoaching</li>
+              <li>Share in 5 Facebook youth soccer coach groups</li>
+              <li>Collect all feedback into a shared doc</li>
+              <li>Set up a free Mailchimp list for emails captured</li>
+            </ul>
+          </div>
+          <div class="rm-col">
+            <div class="rm-col-title">Ahmed does</div>
+            <ul>
+              <li>Try the product as if he were a real coach</li>
+              <li>Tell his coach about it</li>
+              <li>Note which features people ask for most</li>
+            </ul>
+          </div>
+        </div>
+        <div class="rm-milestone">
+          <span class="rm-milestone-label">Exit criteria</span>
+          <span class="rm-milestone-val">100 real users &nbsp;·&nbsp; At least 10 pieces of genuine feedback</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- PHASE 2 -->
+    <div class="rm-phase">
+      <div class="rm-dot p2">2</div>
+      <div class="rm-content">
+        <div class="rm-header">
+          <div class="rm-title">Phase 2 — Build the User Base</div>
+          <div class="rm-time">Month 2–5</div>
+        </div>
+        <p class="rm-goal">No payments yet. The entire focus is on getting coaches to trust the product and come back. SEO content starts compounding. The email list grows. No revenue — just users and learning.</p>
+        <div class="rm-cols">
+          <div class="rm-col">
+            <div class="rm-col-title">Mohsin builds</div>
+            <ul>
+              <li>Basic user accounts (email + password)</li>
+              <li>Session history — saved plans per user</li>
+              <li>Age-specific drill library page</li>
+              <li>Blog/articles section on the site for SEO</li>
+            </ul>
+          </div>
+          <div class="rm-col">
+            <div class="rm-col-title">Safiya does</div>
+            <ul>
+              <li>Publish 2 SEO articles per week using Claude</li>
+              <li>Target: "U8 soccer drills", "youth soccer warmup ideas" etc.</li>
+              <li>Send a monthly email to the growing list</li>
+              <li>Track which pages get traffic in Google Search Console (free)</li>
+            </ul>
+          </div>
+          <div class="rm-col">
+            <div class="rm-col-title">Ahmed does</div>
+            <ul>
+              <li>Review every new article for accuracy</li>
+              <li>Test new features as they ship</li>
+              <li>Share with teammates and their parents</li>
+            </ul>
+          </div>
+        </div>
+        <div class="rm-milestone">
+          <span class="rm-milestone-label">Exit criteria</span>
+          <span class="rm-milestone-val">5,000 registered users &nbsp;·&nbsp; 30+ SEO articles published &nbsp;·&nbsp; 1,000 email subscribers</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- PHASE 3 -->
+    <div class="rm-phase">
+      <div class="rm-dot p3">3</div>
+      <div class="rm-content">
+        <div class="rm-header">
+          <div class="rm-title">Phase 3 — First Revenue</div>
+          <div class="rm-time">Month 5–8</div>
+        </div>
+        <p class="rm-goal">Turn the free user base into paying subscribers. Introduce the free tier limit and the Pro plan. This is the most important phase psychologically — the first time a stranger pays for something you built.</p>
+        <div class="rm-cols">
+          <div class="rm-col">
+            <div class="rm-col-title">Mohsin builds</div>
+            <ul>
+              <li>Stripe payments integrated</li>
+              <li>Pro plan at $7/month</li>
+              <li>Free tier capped at 2 plans/month</li>
+              <li>Season planner (12-week view) — paid only</li>
+              <li>Printable PDF session cards — paid only</li>
+            </ul>
+          </div>
+          <div class="rm-col">
+            <div class="rm-col-title">Safiya does</div>
+            <ul>
+              <li>Monitor conversion rate weekly</li>
+              <li>Email sequence: nudge free users who hit the limit</li>
+              <li>Handle any subscription questions or issues</li>
+              <li>Track MRR in a simple spreadsheet</li>
+            </ul>
+          </div>
+          <div class="rm-col">
+            <div class="rm-col-title">Leyla does</div>
+            <ul>
+              <li>Try the U6 session plans on the field</li>
+              <li>If she finds it fun — the drill works</li>
+              <li>Real-world test for the youngest age group</li>
+            </ul>
+          </div>
+        </div>
+        <div class="rm-milestone">
+          <span class="rm-milestone-label">Exit criteria</span>
+          <span class="rm-milestone-val">First paying subscriber &nbsp;·&nbsp; $1,000 MRR — the moment it becomes a real business</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- PHASE 4 -->
+    <div class="rm-phase">
+      <div class="rm-dot p4">4</div>
+      <div class="rm-content">
+        <div class="rm-header">
+          <div class="rm-title">Phase 4 — Grow &amp; Go International</div>
+          <div class="rm-time">Month 8–18</div>
+        </div>
+        <p class="rm-goal">Accelerate what is already working. Launch on Product Hunt for a spike of new users. Target UK and Australian coaches to solve the seasonality problem. Add features that increase paid conversion.</p>
+        <div class="rm-cols">
+          <div class="rm-col">
+            <div class="rm-col-title">Mohsin builds</div>
+            <ul>
+              <li>Player development notes per player</li>
+              <li>Mobile-optimised redesign (coaches use phones)</li>
+              <li>UK/metric units and English league references</li>
+              <li>Annual subscription option ($60/year)</li>
+              <li>Referee mode — rules explainer for parents</li>
+            </ul>
+          </div>
+          <div class="rm-col">
+            <div class="rm-col-title">Safiya does</div>
+            <ul>
+              <li>Organise Product Hunt launch day</li>
+              <li>Build an email list of UK youth soccer Facebook groups</li>
+              <li>Start collecting video testimonials from coaches</li>
+              <li>First outreach to 5 local youth soccer clubs</li>
+            </ul>
+          </div>
+          <div class="rm-col">
+            <div class="rm-col-title">Ahmed does</div>
+            <ul>
+              <li>Write an honest review of the product for the website</li>
+              <li>Test the player development tracker from his own perspective</li>
+              <li>Suggest features his teammates' coaches would want</li>
+            </ul>
+          </div>
+        </div>
+        <div class="rm-milestone">
+          <span class="rm-milestone-label">Exit criteria</span>
+          <span class="rm-milestone-val">20,000 users &nbsp;·&nbsp; $5,000 MRR &nbsp;·&nbsp; Coaches in at least 3 countries</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- PHASE 5 -->
+    <div class="rm-phase">
+      <div class="rm-dot p5">5</div>
+      <div class="rm-content">
+        <div class="rm-header">
+          <div class="rm-title">Phase 5 — Club Licenses &amp; New Sports</div>
+          <div class="rm-time">Year 2</div>
+        </div>
+        <p class="rm-goal">Unlock the higher-value revenue tier — clubs paying $60/month for all their coaches. Launch the skiing planner (your family's second sport). The business now has multiple revenue streams.</p>
+        <div class="rm-cols">
+          <div class="rm-col">
+            <div class="rm-col-title">Mohsin builds</div>
+            <ul>
+              <li>Club admin dashboard — manage all coaches in a club</li>
+              <li>Shared drill library per club</li>
+              <li>Skiing training planner launched as a new product</li>
+              <li>Coach performance dashboard — season summary</li>
+              <li>Parent-facing session preview link</li>
+            </ul>
+          </div>
+          <div class="rm-col">
+            <div class="rm-col-title">Safiya does</div>
+            <ul>
+              <li>Send club offer emails — free season for a testimonial</li>
+              <li>Convert best clubs to $60/month licenses</li>
+              <li>Newsletter now has 10,000+ subscribers</li>
+              <li>Build affiliate programme — coaches who refer get free months</li>
+            </ul>
+          </div>
+          <div class="rm-col">
+            <div class="rm-col-title">Family does</div>
+            <ul>
+              <li>Ahmed: review club dashboard from a coach's perspective</li>
+              <li>Leyla: test the ski fitness plans designed for junior skiers</li>
+              <li>Monthly family review of what to build next</li>
+            </ul>
+          </div>
+        </div>
+        <div class="rm-milestone">
+          <span class="rm-milestone-label">Exit criteria</span>
+          <span class="rm-milestone-val">75,000 users &nbsp;·&nbsp; $20,000 MRR &nbsp;·&nbsp; 20+ paying clubs &nbsp;·&nbsp; Skiing product live</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- NIRVANA -->
+    <div class="rm-phase">
+      <div class="rm-dot nirvana">★</div>
+      <div class="rm-content nirvana-card">
+        <div class="rm-header">
+          <div class="rm-title">Nirvana — The End State</div>
+          <div class="rm-time">Year 3+</div>
+        </div>
+        <p class="rm-goal">The business runs mostly by itself. Mohsin spends a few hours a week on improvements. Safiya handles business ops in an afternoon. Ahmed is proud to tell people his family built this. Leyla grows up knowing her family created something real.</p>
+
+        <div class="nirvana-stats">
+          <div class="nirvana-stat">
+            <div class="nirvana-stat-num">200k+</div>
+            <div class="nirvana-stat-label">Registered Users</div>
+          </div>
+          <div class="nirvana-stat">
+            <div class="nirvana-stat-num">$100k</div>
+            <div class="nirvana-stat-label">Monthly Revenue</div>
+          </div>
+          <div class="nirvana-stat">
+            <div class="nirvana-stat-num">$1.2M</div>
+            <div class="nirvana-stat-label">Annual Revenue</div>
+          </div>
+          <div class="nirvana-stat">
+            <div class="nirvana-stat-num">3+</div>
+            <div class="nirvana-stat-label">Sports Covered</div>
+          </div>
+          <div class="nirvana-stat">
+            <div class="nirvana-stat-num">20+</div>
+            <div class="nirvana-stat-label">Countries</div>
+          </div>
+          <div class="nirvana-stat">
+            <div class="nirvana-stat-num">$3–6M</div>
+            <div class="nirvana-stat-label">Potential Sale Value</div>
+          </div>
+        </div>
+
+        <div class="rm-cols" style="margin-top:1.2rem;">
+          <div class="rm-col">
+            <div class="rm-col-title">What the business looks like</div>
+            <ul>
+              <li>Soccer, skiing and chess all covered</li>
+              <li>Individual Pro + Club licenses + white-label for associations</li>
+              <li>SEO brings 50,000+ visitors/month with no ad spend</li>
+              <li>Brand partnerships with equipment companies</li>
+              <li>Acquisition interest from sports tech companies</li>
+            </ul>
+          </div>
+          <div class="rm-col">
+            <div class="rm-col-title">What the family's life looks like</div>
+            <ul>
+              <li>Mohsin: 5-10 hours/week, mostly on things he enjoys</li>
+              <li>Safiya: a few hours/week managing the business</li>
+              <li>Ahmed: at university, still part of the story</li>
+              <li>Leyla: grows up knowing the family built something</li>
+              <li>Income is genuinely passive — subscriptions run themselves</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- RISKS -->
+<section id="risks">
+  <div class="label">Honest Assessment</div>
+  <h2>What could go against this plan.</h2>
+  <p style="margin-top:1rem;">
+    Every business plan looks good on paper. These are the real obstacles — ranked by how seriously they can damage the plan. Knowing them now is what separates a plan that works from one that quietly dies.
+  </p>
+
+  <div class="risk-list">
+
+    <div class="risk-item">
+      <span class="risk-badge high">High</span>
+      <div class="risk-body">
+        <h3>SEO takes 4–6 months — maybe longer</h3>
+        <p>The whole growth plan leans on search traffic. But Google takes months to trust a new domain. You could have a great product and get zero visitors for the first 6 months. Without early users, there is no feedback, no word of mouth, and no revenue signal.</p>
+        <p class="risk-fix">Fix: Start community channels (Reddit, Facebook groups) from week 1, not month 3. Don't wait for SEO. Build the audience in parallel.</p>
+      </div>
+    </div>
+
+    <div class="risk-item">
+      <span class="risk-badge high">High</span>
+      <div class="risk-body">
+        <h3>AI output quality has to be genuinely good</h3>
+        <p>A bad session plan embarrasses a coach in front of 12 kids and parents on a Saturday morning. One bad experience and they never come back — and they tell other coaches. The prompts need real soccer coaching knowledge baked in, not just technically correct output.</p>
+        <p class="risk-fix">Fix: Use the family's soccer knowledge to test and validate every plan before launch. You know what a good session looks like — use that as the quality bar.</p>
+      </div>
+    </div>
+
+    <div class="risk-item">
+      <span class="risk-badge high">High</span>
+      <div class="risk-body">
+        <h3>Soccer is seasonal — MRR will be lumpy</h3>
+        <p>The season runs August to May. Summer means coaches don't need weekly session plans. Monthly revenue will spike and crash twice a year. This is not smoothly passive — it's unpredictable unless we think about it early.</p>
+        <p class="risk-fix">Fix: Target UK coaches (season offset) and Southern Hemisphere leagues from day one. Offer off-season features like pre-season fitness planners to retain summer subscribers.</p>
+      </div>
+    </div>
+
+    <div class="risk-item">
+      <span class="risk-badge high">High</span>
+      <div class="risk-body">
+        <h3>Free-to-paid conversion may be 2%, not 5–8%</h3>
+        <p>Coaches are used to free YouTube content. Getting someone to enter a credit card for a coaching tool when "I can Google this" is always an option is harder than it looks. The revenue projections at month 6 assume 500 paying users from 8,000 free — that is optimistic for an unknown product with no brand.</p>
+        <p class="risk-fix">Fix: Make the free tier limit tighter (2 plans/month, not 3). Add a "share to unlock" bonus plan — coaches share the app to get an extra free session. Grows the user base and shows value simultaneously.</p>
+      </div>
+    </div>
+
+    <div class="risk-item">
+      <span class="risk-badge medium">Medium</span>
+      <div class="risk-body">
+        <h3>Club licenses are not actually passive</h3>
+        <p>Getting a club to pay $60/month requires convincing a club administrator. That is a sale. The individual subscription is passive — the club tier is not. The plan shows clubs as a major revenue driver in phase 3 but they require a human conversation to close.</p>
+        <p class="risk-fix">Fix: Don't plan club revenue until there is strong individual user traction. When the time comes, a single outreach email — not a sales call — offering a free season for a testimonial is enough to start.</p>
+      </div>
+    </div>
+
+    <div class="risk-item">
+      <span class="risk-badge medium">Medium</span>
+      <div class="risk-body">
+        <h3>Coaches might just use ChatGPT directly</h3>
+        <p>As AI tools become more mainstream, some coaches will figure out they can prompt ChatGPT themselves. The moat is a structured, soccer-specific experience that is faster, produces better output, and requires zero prompting knowledge. That moat needs to stay clearly wider than raw ChatGPT.</p>
+        <p class="risk-fix">Fix: Continuously improve the output quality and add features raw ChatGPT can't offer — session history, season planner, printable cards, age-specific drill libraries.</p>
+      </div>
+    </div>
+
+    <div class="risk-item">
+      <span class="risk-badge medium">Medium</span>
+      <div class="risk-body">
+        <h3>A bigger player copies it if it works</h3>
+        <p>If the product proves successful, SportsSessionPlanner, TeamSnap, or a well-funded startup adds an AI generator. They already have the user base. They can outspend on marketing.</p>
+        <p class="risk-fix">Fix: Move fast. Build the user base and brand before competitors notice. A loyal community of 50,000 coaches who trust the product is hard to displace even with a bigger budget.</p>
+      </div>
+    </div>
+
+    <div class="risk-item">
+      <span class="risk-badge low">Low</span>
+      <div class="risk-body">
+        <h3>Revenue timeline is optimistic</h3>
+        <p>The projections show $3,500 MRR at month 6. More honest estimate: 18–24 months to reach that number organically. This is a long game — not a quick passive income stream. The family needs to be aligned on this timeline.</p>
+        <p class="risk-fix">Fix: Treat year 1 as investment and learning. The goal in year 1 is user base and product quality, not profit. Revenue follows trust.</p>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- TEAM -->
+<section id="team">
+  <div class="label">The Family Team</div>
+  <h2>Four people. One business. Clear roles.</h2>
+  <p style="margin-top:1rem;">
+    A family-run business works best when everyone knows exactly what they own. These are the four roles the business needs — assign them based on each person's strengths, interest, and available time.
+  </p>
+
+  <div class="team-grid">
+
+    <div class="team-card">
+      <div class="team-avatar">⚙</div>
+      <div class="team-role">Builder — Age 43</div>
+      <div class="team-name">Mohsin</div>
+      <div class="team-desc">The technical and strategic founder. Builds the product using Claude Code, owns the AI integration, and drives the overall direction. The person who turns ideas into a working product.</div>
+      <div class="team-owns">
+        <div class="team-owns-label">Owns</div>
+        <ul class="team-owns-list">
+          <li>Web app development</li>
+          <li>Claude API &amp; prompt quality</li>
+          <li>Hosting &amp; infrastructure</li>
+          <li>Product strategy &amp; roadmap</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="team-card">
+      <div class="team-avatar">📊</div>
+      <div class="team-role">Co-Founder — Age 42</div>
+      <div class="team-name">Safiya</div>
+      <div class="team-desc">The business backbone. Keeps the team organised, tracks what is working, handles the financial side, and makes sure the family business stays on track every month. The one who turns a product into a real business.</div>
+      <div class="team-owns">
+        <div class="team-owns-label">Owns</div>
+        <ul class="team-owns-list">
+          <li>Revenue &amp; cost tracking</li>
+          <li>User feedback &amp; support</li>
+          <li>Monthly family check-in</li>
+          <li>Stripe &amp; subscription setup</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="team-card">
+      <div class="team-avatar">⚽</div>
+      <div class="team-role">Head of Quality — Age 12</div>
+      <div class="team-name">Ahmed</div>
+      <div class="team-desc">The most important voice in the business. Ahmed is exactly who the product is built for — a young player who knows what works on the field and what does not. Every session plan gets past Ahmed before it goes live.</div>
+      <div class="team-owns">
+        <div class="team-owns-label">Owns</div>
+        <ul class="team-owns-list">
+          <li>Test every generated session plan</li>
+          <li>Flag drills that would not work in real life</li>
+          <li>Youth player perspective on features</li>
+          <li>Rate session quality 1–10 honestly</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="team-card">
+      <div class="team-avatar">🌟</div>
+      <div class="team-role">Chief Test Player — Age 6</div>
+      <div class="team-name">Leyla</div>
+      <div class="team-desc">The ultimate reality check. If a U6 drill makes sense to Leyla on the field, it works for our youngest users. Leyla's job is to play, have fun, and let the family know honestly if the game was good or boring.</div>
+      <div class="team-owns">
+        <div class="team-owns-label">Owns</div>
+        <ul class="team-owns-list">
+          <li>Try out drills designed for U6–U8</li>
+          <li>Honest reaction: fun or boring?</li>
+          <li>Remind the team why we built this</li>
+          <li>Team mascot and good energy</li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="discussion-box">
+    <h3>Questions to discuss as a family</h3>
+    <ul class="discussion-questions">
+      <li>Mohsin and Safiya: how many hours per week can each of you realistically commit alongside everything else?</li>
+      <li>Ahmed: which session plans feel real to you — and which ones would you tell your coach to skip?</li>
+      <li>How do Mohsin and Safiya split decisions — product vs. business — without stepping on each other?</li>
+      <li>Do we save the first year's revenue, reinvest it into the product, or split it?</li>
+      <li>What does success look like in 12 months that would make the whole family proud?</li>
+      <li>Ahmed gets a real say — how do we make sure his feedback actually changes the product?</li>
+    </ul>
+  </div>
+</section>
+
+<!-- SUMMARY -->
+<section id="summary" style="border-bottom:none;">
+  <div class="label">The Short Version</div>
+  <h2>Why this is the right bet.</h2>
+
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-icon">🌍</div>
+      <h3>Massive underserved market</h3>
+      <p style="font-size:0.85rem;color:var(--muted);margin-top:0.3rem;">3M+ volunteer coaches in the US alone. No good tool exists for them. The gap is real and large.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">🔁</div>
+      <h3>Weekly recurring problem</h3>
+      <p style="font-size:0.85rem;color:var(--muted);margin-top:0.3rem;">Every coach needs a session plan every week during the season. Built-in retention — they come back because the problem comes back.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">🤖</div>
+      <h3>AI does the work</h3>
+      <p style="font-size:0.85rem;color:var(--muted);margin-top:0.3rem;">Claude generates every plan. The marginal cost per user is cents. Passive by design — no manual work per customer.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">🔍</div>
+      <h3>SEO-driven, no sales</h3>
+      <p style="font-size:0.85rem;color:var(--muted);margin-top:0.3rem;">Coaches search Google for exactly what we provide. Traffic compounds. No ads, no cold emails, no sales team ever.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">📐</div>
+      <h3>Domain knowledge advantage</h3>
+      <p style="font-size:0.85rem;color:var(--muted);margin-top:0.3rem;">You follow soccer, your family coaches and plays. You know immediately if the output is good. That is a real moat versus a developer building blind.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">🌱</div>
+      <h3>Built on beliefs</h3>
+      <p style="font-size:0.85rem;color:var(--muted);margin-top:0.3rem;">No gambling, no betting, no grey areas. Helping volunteer parents be better coaches for their kids — clean, clear, and aligned with your values.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  CoachAI — Business Plan &nbsp;·&nbsp; Built with Claude &nbsp;·&nbsp; 2026
+</footer>
+
+</body>
+</html>
