@@ -1,6 +1,6 @@
 run = "python app.py"
 entrypoint = "app.py"
-modules = ["python-3.11:v18-20231218-bd790d7"]
+modules = ["python-3.11"]
 
 [nix]
 channel = "stable-23_11"
@@ -39,3 +39,4 @@ outputType = "webview"
 
 [agent]
 expertMode = true
+integrations = ["python_anthropic_ai_integrations:1.0.0"]

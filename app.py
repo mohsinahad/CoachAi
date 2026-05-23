@@ -142,7 +142,10 @@ def evaluate_plan(plan: dict) -> dict:
         }
 
     import anthropic, json as _json
-    client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
+    client = anthropic.Anthropic(
+        api_key=os.environ.get("AI_INTEGRATIONS_ANTHROPIC_API_KEY"),
+        base_url=os.environ.get("AI_INTEGRATIONS_ANTHROPIC_BASE_URL"),
+    )
 
     criteria_text = "\n".join(
         f'{i+1}. {key} (1-10): {desc}'
@@ -200,7 +203,10 @@ Session plan to evaluate:
 def get_real_plan(age_group: str, players: int, duration: int, focus: str, last_week: str) -> dict:
     import anthropic
 
-    client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
+    client = anthropic.Anthropic(
+        api_key=os.environ.get("AI_INTEGRATIONS_ANTHROPIC_API_KEY"),
+        base_url=os.environ.get("AI_INTEGRATIONS_ANTHROPIC_BASE_URL"),
+    )
 
     age_guidance = {
         "U6":  "Players are 4-6 years old. Focus entirely on fun and basic ball familiarity. No tactics, no positions. Keep every activity under 8 minutes. Use games not drills. Coaching points must be about enjoyment and basic ball contact only.",
