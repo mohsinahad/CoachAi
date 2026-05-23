@@ -913,8 +913,13 @@
     }
   }
 
+  // auto-enable field view when a plan is present
+  {% if plan %}
+  toggleFieldMode();
+  {% endif %}
+
   // on mobile, collapse all sections by default when plan loads
-  if (window.innerWidth <= 640) {
+  if (window.innerWidth <= 640 && !document.body.classList.contains('field-mode')) {
     document.querySelectorAll('.section-card').forEach(c => c.classList.add('collapsed'));
   }
 
