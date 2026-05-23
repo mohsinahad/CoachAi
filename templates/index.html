@@ -795,11 +795,7 @@
       <span class="plan-tag">{{ plan.players }} players</span>
       <span class="plan-tag">{{ plan.duration }} minutes</span>
       <span class="plan-tag">{{ plan.sections | length }} sections</span>
-      {% if evaluation %}
-      <span class="plan-tag {% if evaluation.overall_score >= 7 %}tag-green{% elif evaluation.overall_score >= 5 %}tag-amber{% else %}tag-red{% endif %}">
-        AI score: {{ "%.1f"|format(evaluation.overall_score) }}/10
-      </span>
-      {% endif %}
+      <span id="ai-score-tag" class="plan-tag" style="display:none"></span>
     </div>
   </div>
 
@@ -913,9 +909,26 @@
     }
   }
 
-  // auto-enable field view when a plan is present
+  // auto-enable field view and fetch evaluation when a plan is present
   {% if plan %}
   toggleFieldMode();
+
+  fetch('/evaluate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({{ plan | tojson }})
+  })
+  .then(r => r.json())
+  .then(ev => {
+    const tag = document.getElementById('ai-score-tag');
+    if (!tag) return;
+    const score = ev.overall_score;
+    const cls = score >= 7 ? 'tag-green' : score >= 5 ? 'tag-amber' : 'tag-red';
+    tag.className = `plan-tag ${cls}`;
+    tag.textContent = `AI score: ${score.toFixed(1)}/10`;
+    tag.style.display = 'inline-block';
+  })
+  .catch(() => {});
   {% endif %}
 
   // on mobile, collapse all sections by default when plan loads

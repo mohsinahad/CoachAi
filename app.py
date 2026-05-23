@@ -264,7 +264,7 @@ Return raw JSON only — no markdown, no text outside the JSON:
 }}"""
 
     message = client.messages.create(
-        model="claude-opus-4-7",
+        model="claude-sonnet-4-6",
         max_tokens=2000,
         messages=[{"role": "user", "content": prompt}],
     )
@@ -290,8 +290,14 @@ def generate():
     else:
         plan = get_real_plan(age_group, players, duration, focus, last_week)
 
-    evaluation = evaluate_plan(plan)
-    return render_template("index.html", plan=plan, evaluation=evaluation, mock=MOCK_MODE)
+    return render_template("index.html", plan=plan, evaluation=None, mock=MOCK_MODE)
+
+
+@app.route("/evaluate", methods=["POST"])
+def evaluate():
+    plan = request.get_json()
+    result = evaluate_plan(plan)
+    return jsonify(result)
 
 
 @app.route("/rate", methods=["POST"])
