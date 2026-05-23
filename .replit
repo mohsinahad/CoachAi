@@ -39,4 +39,4 @@ outputType = "webview"
 
 [agent]
 expertMode = true
-integrations = ["python_anthropic_ai_integrations:1.0.0"]
+integrations = ["python_anthropic_ai_integrations:1.0.0", "github:1.0.0"]
