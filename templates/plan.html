@@ -1464,6 +1464,16 @@
         <div class="cost-row">
           <div class="cost-row-top">
             <div>
+              <div class="cost-row-label">Stripe fees</div>
+              <div class="cost-row-detail" id="cc-stripe-detail">0 paid users × $0.50 (2.9% + $0.30 per charge)</div>
+            </div>
+            <div class="cost-row-val r" id="cc-stripe">$0</div>
+          </div>
+          <div class="cost-bar-wrap"><div class="cost-bar bar-r" id="cc-stripe-bar" style="width:0%"></div></div>
+        </div>
+        <div class="cost-row">
+          <div class="cost-row-top">
+            <div>
               <div class="cost-row-label">Replit hosting</div>
               <div class="cost-row-detail" id="cc-replit-detail">Core plan — always-on deployment</div>
             </div>
@@ -1484,9 +1494,12 @@
         <div>Free users generate 3 sessions/month (capped by free tier)</div>
         <div>Paid users generate 8 sessions/month (more active)</div>
         <div>API cost ~$0.04/session (Claude Sonnet generation + Haiku evaluation)</div>
+        <div>Stripe: 2.9% + $0.30 per charge = ~$0.50 per paid user/month</div>
         <div>Replit: $20–$250/month depending on traffic tier</div>
         <div>Revenue: paid users × $7/month (individual Pro plan)</div>
-        <div>No marketing, infrastructure, or staff costs included</div>
+        <div>Domain: ~$1/month — negligible, not modelled</div>
+        <div>Income tax on profits — varies by jurisdiction, not modelled</div>
+        <div>No marketing or staff costs — product-led growth only</div>
       </div>
     </div>
 
@@ -2176,35 +2189,39 @@
     var paid   = Math.round(users * conv);
     var free   = users - paid;
 
-    var sessions = free * 3 + paid * 8;
-    var revenue  = paid * 7;
-    var apiCost  = sessions * 0.04;
-    var hosting  = replitCost(users);
-    var total    = apiCost + hosting;
-    var profit   = revenue - total;
-    var margin   = revenue > 0 ? (profit / revenue * 100) : null;
+    var sessions   = free * 3 + paid * 8;
+    var revenue    = paid * 7;
+    var apiCost    = sessions * 0.04;
+    var stripeCost = paid * (7 * 0.029 + 0.30);
+    var hosting    = replitCost(users);
+    var total      = apiCost + stripeCost + hosting;
+    var profit     = revenue - total;
+    var margin     = revenue > 0 ? (profit / revenue * 100) : null;
 
-    document.getElementById('cc-users-val').textContent   = users.toLocaleString();
-    document.getElementById('cc-rev-detail').textContent  = paid.toLocaleString() + ' paid users × $7/month';
-    document.getElementById('cc-api-detail').textContent  = sessions.toLocaleString() + ' sessions × ~$0.04 each';
-    document.getElementById('cc-replit-detail').textContent = replitLabel(users);
-    document.getElementById('cc-revenue').textContent     = fmtMoney(revenue);
-    document.getElementById('cc-api').textContent         = fmtMoney(apiCost);
-    document.getElementById('cc-replit').textContent      = '$' + hosting;
+    document.getElementById('cc-users-val').textContent    = users.toLocaleString();
+    document.getElementById('cc-rev-detail').textContent   = paid.toLocaleString() + ' paid users × $7/month';
+    document.getElementById('cc-api-detail').textContent   = sessions.toLocaleString() + ' sessions × ~$0.04 each';
+    document.getElementById('cc-stripe-detail').textContent= paid.toLocaleString() + ' paid users × $0.50 (2.9% + $0.30)';
+    document.getElementById('cc-replit-detail').textContent= replitLabel(users);
+    document.getElementById('cc-revenue').textContent      = fmtMoney(revenue);
+    document.getElementById('cc-api').textContent          = fmtMoney(apiCost);
+    document.getElementById('cc-stripe').textContent       = fmtMoney(stripeCost);
+    document.getElementById('cc-replit').textContent       = '$' + hosting;
 
     var pEl = document.getElementById('cc-profit');
-    pEl.textContent  = (profit >= 0 ? '+' : '-') + fmtMoney(Math.abs(profit));
-    pEl.className    = 'cost-profit-val' + (profit < 0 ? ' loss' : '');
+    pEl.textContent = (profit >= 0 ? '+' : '-') + fmtMoney(Math.abs(profit));
+    pEl.className   = 'cost-profit-val' + (profit < 0 ? ' loss' : '');
 
     var mEl = document.getElementById('cc-margin');
     mEl.textContent = margin === null ? 'No revenue yet'
                     : profit < 0     ? 'Loss of ' + fmtMoney(Math.abs(profit)) + '/mo'
                     :                  Math.round(margin) + '% profit margin';
 
-    var maxBar = Math.max(revenue, apiCost, hosting, 1);
-    document.getElementById('cc-rev-bar').style.width    = (revenue / maxBar * 100) + '%';
-    document.getElementById('cc-api-bar').style.width    = (apiCost / maxBar * 100) + '%';
-    document.getElementById('cc-replit-bar').style.width = (hosting / maxBar * 100) + '%';
+    var maxBar = Math.max(revenue, apiCost, stripeCost, hosting, 1);
+    document.getElementById('cc-rev-bar').style.width    = (revenue    / maxBar * 100) + '%';
+    document.getElementById('cc-api-bar').style.width    = (apiCost    / maxBar * 100) + '%';
+    document.getElementById('cc-stripe-bar').style.width = (stripeCost / maxBar * 100) + '%';
+    document.getElementById('cc-replit-bar').style.width = (hosting    / maxBar * 100) + '%';
 
     var be = document.getElementById('cc-breakeven');
     if (revenue === 0) {
@@ -2217,7 +2234,7 @@
       be.innerHTML = 'At ' + users.toLocaleString() + ' users with ' + Math.round(conv * 100) + '% conversion you are '
         + '<strong>profitable</strong> — generating <strong>' + fmtMoney(revenue) + '/month revenue</strong> against '
         + '<strong>' + fmtMoney(total) + ' in costs</strong>. '
-        + 'The API bill is ' + fmtMoney(apiCost) + ' and hosting is $' + hosting + '.';
+        + 'API: ' + fmtMoney(apiCost) + ' · Stripe: ' + fmtMoney(stripeCost) + ' · Hosting: $' + hosting + '.';
     }
   }
 
