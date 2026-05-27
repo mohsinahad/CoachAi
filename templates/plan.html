@@ -864,6 +864,170 @@
       font-weight: 700;
     }
 
+    /* COST CALCULATOR */
+    .cost-calculator { margin-top: 2.5rem; display: flex; flex-direction: column; gap: 1.5rem; }
+    .cost-controls {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.8rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+    .cost-control-group { display: flex; flex-direction: column; gap: 0.8rem; }
+    .cost-control-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+      color: var(--text);
+    }
+    .cost-control-val { font-size: 1.1rem; font-weight: 800; color: var(--green-light); }
+    .cost-slider {
+      -webkit-appearance: none;
+      width: 100%; height: 4px;
+      border-radius: 4px;
+      background: var(--border);
+      outline: none; cursor: pointer;
+    }
+    .cost-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: var(--green-light);
+      cursor: pointer;
+      border: 2px solid var(--bg);
+      box-shadow: 0 0 0 3px var(--green-dim);
+    }
+    .cost-slider-ticks {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.62rem;
+      color: var(--muted);
+      letter-spacing: 0.03em;
+    }
+    .conv-options { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .conv-btn {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 6px;
+      padding: 0.4rem 1.1rem;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: inherit;
+    }
+    .conv-btn:hover { border-color: var(--green); color: var(--green-light); }
+    .conv-btn.active { background: var(--green-dim); border-color: var(--green); color: var(--green-light); }
+
+    .cost-results {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 1rem;
+    }
+    .cost-profit-block {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.8rem 1.2rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 0.4rem;
+    }
+    .cost-profit-label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+    }
+    .cost-profit-val {
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: var(--green-light);
+      line-height: 1;
+      transition: color 0.3s;
+    }
+    .cost-profit-val.loss { color: #f87171; }
+    .cost-profit-sub { font-size: 0.78rem; color: var(--muted); margin-top: 0.2rem; }
+
+    .cost-breakdown {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+    .cost-row { display: flex; flex-direction: column; gap: 0.35rem; }
+    .cost-row-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 1rem;
+    }
+    .cost-row-label { font-size: 0.82rem; font-weight: 600; color: var(--white); }
+    .cost-row-detail { font-size: 0.7rem; color: var(--muted); margin-top: 1px; }
+    .cost-row-val { font-size: 0.95rem; font-weight: 700; white-space: nowrap; }
+    .cost-row-val.g { color: var(--green-light); }
+    .cost-row-val.r { color: #f87171; }
+    .cost-bar-wrap {
+      height: 4px; background: var(--border);
+      border-radius: 4px; overflow: hidden;
+    }
+    .cost-bar { height: 100%; border-radius: 4px; transition: width 0.4s ease; min-width: 2px; }
+    .bar-g { background: var(--green-light); }
+    .bar-r { background: #f87171; }
+    .bar-a { background: #f59e0b; }
+
+    .cost-breakeven {
+      background: rgba(22,163,74,0.06);
+      border: 1px solid var(--green-dim);
+      border-radius: 8px;
+      padding: 1rem 1.4rem;
+      font-size: 0.85rem;
+      color: var(--text);
+      line-height: 1.6;
+    }
+    .cost-breakeven strong { color: var(--green-light); }
+
+    .cost-assumptions {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem 1.5rem;
+    }
+    .cost-assume-title {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      font-weight: 600;
+      margin-bottom: 0.7rem;
+    }
+    .cost-assume-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 0.35rem;
+    }
+    .cost-assume-grid div {
+      font-size: 0.78rem;
+      color: var(--muted);
+      padding-left: 1rem;
+      position: relative;
+      line-height: 1.5;
+    }
+    .cost-assume-grid div::before { content: '·'; position: absolute; left: 0; color: var(--green); font-weight: 700; }
+
+    @media (max-width: 640px) {
+      .cost-results { grid-template-columns: 1fr; }
+    }
+
     /* FOOTER */
     footer {
       text-align: center;
@@ -890,6 +1054,7 @@
     <li><a href="#diff">Edge</a></li>
     <li><a href="#growth">Growth</a></li>
     <li><a href="#money">Revenue</a></li>
+    <li><a href="#costs">Costs</a></li>
     <li><a href="#publish">Launch</a></li>
     <li><a href="#roadmap">Roadmap</a></li>
     <li><a href="#risks">Risks</a></li>
@@ -1230,6 +1395,102 @@
   <p style="margin-top:1.5rem;font-size:0.82rem;color:var(--muted);">
     Projections assume 5–8% free-to-paid conversion (industry average for niche tools is 3–7%). Cost per AI generation: ~$0.02 via Claude API. At 1,000 paid users generating 4 plans/month the AI cost is ~$80/month. Margins are very high.
   </p>
+</section>
+
+<!-- COST CALCULATOR -->
+<section id="costs">
+  <div class="label">Unit Economics</div>
+  <h2>Will you make money? Run the numbers.</h2>
+  <p style="margin-top:1rem;">
+    Drag the sliders to model different growth scenarios. See exactly what Replit and the Anthropic API cost you at scale — and whether you're in profit.
+  </p>
+
+  <div class="cost-calculator">
+
+    <div class="cost-controls">
+      <div class="cost-control-group">
+        <div class="cost-control-label">
+          <span>Total registered users</span>
+          <span class="cost-control-val" id="cc-users-val">1,000</span>
+        </div>
+        <input type="range" class="cost-slider" id="cc-slider" min="0" max="100" value="38">
+        <div class="cost-slider-ticks">
+          <span>100</span><span>500</span><span>2k</span><span>5k</span><span>15k</span><span>50k</span>
+        </div>
+      </div>
+
+      <div class="cost-control-group">
+        <div class="cost-control-label">
+          <span>Free-to-paid conversion rate</span>
+          <span class="cost-control-val" id="cc-conv-val">5%</span>
+        </div>
+        <div class="conv-options">
+          <button class="conv-btn" data-val="2">2% — cautious</button>
+          <button class="conv-btn active" data-val="5">5% — realistic</button>
+          <button class="conv-btn" data-val="8">8% — optimistic</button>
+          <button class="conv-btn" data-val="10">10% — best case</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="cost-results">
+      <div class="cost-profit-block">
+        <div class="cost-profit-label">Monthly Profit / Loss</div>
+        <div class="cost-profit-val" id="cc-profit">+$0</div>
+        <div class="cost-profit-sub" id="cc-margin">—</div>
+      </div>
+
+      <div class="cost-breakdown">
+        <div class="cost-row">
+          <div class="cost-row-top">
+            <div>
+              <div class="cost-row-label">Revenue</div>
+              <div class="cost-row-detail" id="cc-rev-detail">0 paid users × $7/month</div>
+            </div>
+            <div class="cost-row-val g" id="cc-revenue">$0</div>
+          </div>
+          <div class="cost-bar-wrap"><div class="cost-bar bar-g" id="cc-rev-bar" style="width:0%"></div></div>
+        </div>
+        <div class="cost-row">
+          <div class="cost-row-top">
+            <div>
+              <div class="cost-row-label">Anthropic API</div>
+              <div class="cost-row-detail" id="cc-api-detail">0 sessions × ~$0.04 each</div>
+            </div>
+            <div class="cost-row-val r" id="cc-api">$0</div>
+          </div>
+          <div class="cost-bar-wrap"><div class="cost-bar bar-r" id="cc-api-bar" style="width:0%"></div></div>
+        </div>
+        <div class="cost-row">
+          <div class="cost-row-top">
+            <div>
+              <div class="cost-row-label">Replit hosting</div>
+              <div class="cost-row-detail" id="cc-replit-detail">Core plan — always-on deployment</div>
+            </div>
+            <div class="cost-row-val r" id="cc-replit">$20</div>
+          </div>
+          <div class="cost-bar-wrap"><div class="cost-bar bar-a" id="cc-replit-bar" style="width:0%"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cost-breakeven" id="cc-breakeven">
+      At 1,000 users with 5% conversion you are <strong>profitable</strong> — generating <strong>$350/month revenue</strong> against <strong>$177 in costs</strong>.
+    </div>
+
+    <div class="cost-assumptions">
+      <div class="cost-assume-title">Model assumptions</div>
+      <div class="cost-assume-grid">
+        <div>Free users generate 3 sessions/month (capped by free tier)</div>
+        <div>Paid users generate 8 sessions/month (more active)</div>
+        <div>API cost ~$0.04/session (Claude Sonnet generation + Haiku evaluation)</div>
+        <div>Replit: $20–$250/month depending on traffic tier</div>
+        <div>Revenue: paid users × $7/month (individual Pro plan)</div>
+        <div>No marketing, infrastructure, or staff costs included</div>
+      </div>
+    </div>
+
+  </div>
 </section>
 
 <!-- WHY CLAUDE -->
@@ -1879,5 +2140,101 @@
   CoachAI — Business Plan &nbsp;·&nbsp; Built with Claude &nbsp;·&nbsp; 2026
 </footer>
 
+<script>
+(function () {
+  function toUsers(v) {
+    var lo = Math.log(100), hi = Math.log(50000);
+    return Math.round(Math.exp(lo + (hi - lo) * v / 100));
+  }
+  function fmtMoney(n) {
+    if (Math.abs(n) >= 1000) return '$' + (n / 1000).toFixed(1) + 'k';
+    return '$' + Math.round(n);
+  }
+  function fmtNum(n) {
+    return n >= 1000 ? (n / 1000).toFixed(1) + 'k' : n.toString();
+  }
+  function replitCost(users) {
+    if (users < 500)   return 20;
+    if (users < 2000)  return 25;
+    if (users < 10000) return 50;
+    if (users < 30000) return 100;
+    return 250;
+  }
+  function replitLabel(users) {
+    if (users < 500)   return 'Core plan — always-on deployment';
+    if (users < 2000)  return 'Core + light autoscale';
+    if (users < 10000) return 'Autoscale — medium traffic';
+    if (users < 30000) return 'Autoscale — high traffic';
+    return 'Autoscale — consider upgrading to Replit Teams';
+  }
+
+  var conv = 0.05;
+
+  function update() {
+    var v      = parseInt(document.getElementById('cc-slider').value);
+    var users  = toUsers(v);
+    var paid   = Math.round(users * conv);
+    var free   = users - paid;
+
+    var sessions = free * 3 + paid * 8;
+    var revenue  = paid * 7;
+    var apiCost  = sessions * 0.04;
+    var hosting  = replitCost(users);
+    var total    = apiCost + hosting;
+    var profit   = revenue - total;
+    var margin   = revenue > 0 ? (profit / revenue * 100) : null;
+
+    document.getElementById('cc-users-val').textContent   = users.toLocaleString();
+    document.getElementById('cc-rev-detail').textContent  = paid.toLocaleString() + ' paid users × $7/month';
+    document.getElementById('cc-api-detail').textContent  = sessions.toLocaleString() + ' sessions × ~$0.04 each';
+    document.getElementById('cc-replit-detail').textContent = replitLabel(users);
+    document.getElementById('cc-revenue').textContent     = fmtMoney(revenue);
+    document.getElementById('cc-api').textContent         = fmtMoney(apiCost);
+    document.getElementById('cc-replit').textContent      = '$' + hosting;
+
+    var pEl = document.getElementById('cc-profit');
+    pEl.textContent  = (profit >= 0 ? '+' : '-') + fmtMoney(Math.abs(profit));
+    pEl.className    = 'cost-profit-val' + (profit < 0 ? ' loss' : '');
+
+    var mEl = document.getElementById('cc-margin');
+    mEl.textContent = margin === null ? 'No revenue yet'
+                    : profit < 0     ? 'Loss of ' + fmtMoney(Math.abs(profit)) + '/mo'
+                    :                  Math.round(margin) + '% profit margin';
+
+    var maxBar = Math.max(revenue, apiCost, hosting, 1);
+    document.getElementById('cc-rev-bar').style.width    = (revenue / maxBar * 100) + '%';
+    document.getElementById('cc-api-bar').style.width    = (apiCost / maxBar * 100) + '%';
+    document.getElementById('cc-replit-bar').style.width = (hosting / maxBar * 100) + '%';
+
+    var be = document.getElementById('cc-breakeven');
+    if (revenue === 0) {
+      be.innerHTML = 'No paid users yet at this conversion rate. Drag the slider up or increase conversion rate.';
+    } else if (profit < 0) {
+      be.innerHTML = 'At ' + users.toLocaleString() + ' users with ' + Math.round(conv * 100) + '% conversion you are '
+        + '<strong style="color:#f87171">losing ' + fmtMoney(Math.abs(profit)) + '/month</strong>. '
+        + 'Your costs (' + fmtMoney(total) + ') exceed your revenue (' + fmtMoney(revenue) + '). Grow the user base or improve conversion.';
+    } else {
+      be.innerHTML = 'At ' + users.toLocaleString() + ' users with ' + Math.round(conv * 100) + '% conversion you are '
+        + '<strong>profitable</strong> — generating <strong>' + fmtMoney(revenue) + '/month revenue</strong> against '
+        + '<strong>' + fmtMoney(total) + ' in costs</strong>. '
+        + 'The API bill is ' + fmtMoney(apiCost) + ' and hosting is $' + hosting + '.';
+    }
+  }
+
+  document.getElementById('cc-slider').addEventListener('input', update);
+
+  document.querySelectorAll('.conv-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('.conv-btn').forEach(function (b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      conv = parseInt(btn.dataset.val) / 100;
+      document.getElementById('cc-conv-val').textContent = btn.dataset.val + '%';
+      update();
+    });
+  });
+
+  update();
+})();
+</script>
 </body>
 </html>
