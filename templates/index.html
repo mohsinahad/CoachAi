@@ -42,7 +42,19 @@
       top: 0;
       z-index: 10;
     }
-    .nav-brand { font-weight: 800; color: var(--green-light); font-size: 1.1rem; letter-spacing: -0.01em; }
+    .nav-brand { font-weight: 800; color: var(--green-light); font-size: 1.1rem; letter-spacing: -0.01em; display: flex; align-items: center; gap: 0.5rem; }
+    .nav-sport {
+      font-size: 0.65rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--green-dim);
+      background: rgba(22,163,74,0.12);
+      border: 1px solid var(--green-dim);
+      border-radius: 4px;
+      padding: 2px 7px;
+      color: var(--green-light);
+    }
     .nav-links { display: flex; gap: 0.25rem; }
     .nav-link {
       font-size: 0.78rem;
@@ -812,7 +824,7 @@
 </div>
 
 <nav>
-  <div class="nav-brand">CoachAI</div>
+  <div class="nav-brand">CoachAI <span class="nav-sport">Soccer</span></div>
   <div class="nav-links">
     <a href="/" class="nav-link active">Session Planner</a>
   </div>
