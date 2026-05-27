@@ -25,6 +25,7 @@ RATINGS_FILE = DATA_DIR / "ratings.json"
 
 # ─── Toggle this to False and set ANTHROPIC_API_KEY env var when ready ───────
 MOCK_MODE = False
+LOCAL = os.environ.get("REPLIT_DEPLOYMENT") is None
 
 
 def get_mock_plan(age_group: str, players: int, duration: int, focus: str, last_week: str) -> dict:
@@ -274,7 +275,7 @@ Return raw JSON only — no markdown, no text outside the JSON:
 
 @app.route("/", methods=["GET"])
 def index():
-    return render_template("index.html", plan=None)
+    return render_template("index.html", plan=None, local=LOCAL)
 
 
 @app.route("/generate", methods=["POST"])
@@ -290,7 +291,7 @@ def generate():
     else:
         plan = get_real_plan(age_group, players, duration, focus, last_week)
 
-    return render_template("index.html", plan=plan, evaluation=None, mock=MOCK_MODE)
+    return render_template("index.html", plan=plan, evaluation=None, mock=MOCK_MODE, local=LOCAL)
 
 
 DELIMITER = "\n---NEXT---\n"

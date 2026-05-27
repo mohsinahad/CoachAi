@@ -828,12 +828,20 @@
   <div class="nav-brand">CoachAI <span class="nav-sport">Soccer</span></div>
   <div class="nav-links">
     <a href="/" class="nav-link active">Session Planner</a>
+    {% if local %}
+    <a href="/progress" class="nav-link">Progress</a>
+    <a href="/plan" class="nav-link">Business Plan</a>
+    {% endif %}
   </div>
   <button class="nav-hamburger" id="hamburger" onclick="toggleMenu()">&#9776;</button>
 </nav>
 
 <div class="mobile-menu" id="mobile-menu">
   <a href="/" class="active">Session Planner</a>
+  {% if local %}
+  <a href="/progress">Progress</a>
+  <a href="/plan">Business Plan</a>
+  {% endif %}
 </div>
 
 <div class="container">
