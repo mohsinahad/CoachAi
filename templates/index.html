@@ -968,8 +968,8 @@
 
   <!-- AHMED'S RATING — Phase 0 only -->
   <div class="rating-card" id="rating-card" style="display:none;">
-    <div class="rating-title">Ahmed's Rating</div>
-    <div class="rating-subtitle">Phase 0 test — would a real player use this session? Rate it honestly.</div>
+    <div class="rating-title">Your Rating</div>
+    <div class="rating-subtitle">Phase 0 test — would a real coach use this session? Rate it honestly.</div>
     <div class="stars">
       {% for i in range(1, 11) %}
       <button class="star-btn" onclick="rate({{ i }})" id="star-{{ i }}">{{ i }}</button>
@@ -985,7 +985,7 @@
         <textarea id="what-wrong" placeholder="Any drills a coach would skip? Instructions that were confusing?"></textarea>
       </div>
       <button class="btn-submit-rating" onclick="submitRating()">Save Rating</button>
-      <div id="rating-saved" style="display:none; font-size:0.82rem; color:var(--green-light);">Rating saved. Thanks Ahmed.</div>
+      <div id="rating-saved" style="display:none; font-size:0.82rem; color:var(--green-light);">Rating saved.</div>
     </div>
   </div>
 

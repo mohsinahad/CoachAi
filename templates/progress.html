@@ -138,7 +138,7 @@
   <!-- PHASE 0 COMPLETE BANNER -->
   <div class="success-banner" id="success-banner">
     <h2>Phase 0 Complete</h2>
-    <p>Ahmed has rated 3 consecutive plans 7/10 or above. Ready to move to Phase 1 — Launch.</p>
+    <p>3 consecutive plans rated 7/10 or above. Ready to move to Phase 1 — Launch.</p>
   </div>
 
   <!-- PHASES -->
@@ -157,7 +157,7 @@
       </div>
       <div class="phase-body">
         <div class="criteria-label">Exit Criteria</div>
-        <div class="criteria-text">Ahmed rates 3 consecutive session plans <strong style="color:var(--green-light)">7/10 or above</strong></div>
+        <div class="criteria-text">Rate 3 consecutive session plans <strong style="color:var(--green-light)">7/10 or above</strong></div>
         <div class="progress-wrap">
           <div class="progress-bar-bg">
             <div class="progress-bar-fill" id="phase0-bar" style="width:0%"></div>
@@ -254,9 +254,9 @@
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:2.5rem;" class="scores-cols">
 
     <div>
-      <div class="section-title" id="ratings-heading">Ahmed's Ratings <span id="consec-tag"></span></div>
+      <div class="section-title" id="ratings-heading">Your Ratings <span id="consec-tag"></span></div>
       <div id="ratings-container">
-        <div class="no-ratings">No ratings yet. Generate a session plan and have Ahmed rate it.</div>
+        <div class="no-ratings">No ratings yet. Generate a session plan and rate it.</div>
       </div>
       <button class="btn-clear" id="clear-btn" onclick="clearRatings()" style="display:none">Clear all ratings</button>
     </div>
@@ -337,7 +337,7 @@
     }
 
     if (ratings.length === 0) {
-      container.innerHTML = '<div class="no-ratings">No ratings yet. Generate a session plan and have Ahmed rate it.</div>';
+      container.innerHTML = '<div class="no-ratings">No ratings yet. Generate a session plan and rate it.</div>';
       clearBtn.style.display = 'none';
       return;
     }
@@ -384,7 +384,7 @@
   }
 
   function clearRatings() {
-    if (confirm('Clear all of Ahmed\'s ratings?')) {
+    if (confirm('Clear all ratings?')) {
       fetch('/ratings/clear', { method: 'POST' }).then(() => render());
     }
   }
