@@ -321,41 +321,100 @@ def stream_plan():
         client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
 
         age_guidance = {
-            "U6":  "Players are 4-6. Fun and ball familiarity only. No tactics. Keep activities under 8 minutes. Very basic coaching points.",
-            "U8":  "Players are 6-8. Simple skill introduction. Fun first. Very basic coaching points only.",
-            "U10": "Players are 8-10. Basic techniques with light competition. Simple positional awareness.",
-            "U12": "Players are 10-12. CRITICAL: no basic technique cues. Focus on through balls, one-twos, third-man runs, pressing, creating space. Tactical and intermediate-level coaching points only.",
-            "U14": "Players are 12-14. High tactical complexity. Positional play, pressing systems, transitions. Advanced coaching points.",
-            "U16": "Players are 14-16. Near-professional level. Team shape, game model, clinical finishing. Highly specific coaching points.",
+            "U6": """Players are 4-6 years old.
+- Activities must be GAMES not drills: tag, colours, animals, treasure hunts with a ball. No standing in lines.
+- Zero tactics, zero positions, zero formations.
+- Every child must have a ball or be actively moving at all times.
+- Switch activities every 5-6 minutes — attention span is very short.
+- Coaching points: maximum 1 per activity, must be physical and joyful ("kick it as hard as you can!", "dribble to the cone and back").
+- The session should feel like playtime that happens to use a ball.""",
+
+            "U8": """Players are 6-8 years old.
+- Introduce basic skills (dribbling, passing, shooting) through fun competitive games.
+- Every child should have a ball or be actively involved — no long queues.
+- Light competition works well: first team to score, beat the clock, score in 3 gates.
+- Max 10 minutes per activity before moving on.
+- Coaching points: maximum 2 per drill, concrete and physical ("use the inside of your foot", "look at the goal before you shoot").
+- Keep instructions short — demonstrate, don't lecture.""",
+
+            "U10": """Players are 8-10 years old.
+- They know HOW to kick and pass — now teach WHEN, WHERE, and WHY.
+- Every passing drill must include MOVEMENT after the pass — never stationary passing lines.
+- Use 2v1 and 3v2 situations to introduce decision-making under light pressure.
+- Rondos (3v1, 4v2 in a small grid) are excellent for this age.
+- Competition keeps engagement: award points, use scoreboards, create mini-tournaments.
+- Coaching points must be specific and observable: "receive on your back foot so you can see the field", "pass to your teammate's front foot", "move immediately after passing — don't watch".
+- The small-sided game must include a rule that directly rewards the session focus (e.g. for passing: a bonus point for completing 5 consecutive passes before scoring).
+- Avoid abstract language — everything must be something they can immediately do.""",
+
+            "U12": """Players are 10-12 years old.
+CRITICAL: Do NOT use basic technique cues — they already know how to pass, dribble, and shoot.
+- Focus entirely on TACTICAL concepts: through balls, one-twos, third-man runs, pressing triggers, switching the point of attack, creating and exploiting space behind the defensive line.
+- Drills must have pressure and decision-making: defenders, time limits, or numerical disadvantages.
+- Use 4v2, 5v2, 6v4 rondos and combination play grids with live defenders.
+- Coaching points must be tactical and specific: "play the third-man when the first defender commits to the ball", "trigger the press when the pass goes backwards or to the goalkeeper", "switch play when you see the far side is open".
+- The game must replicate a realistic match situation — positional overloads, transition moments, or directional play.
+- Challenge them: if a drill feels too easy after 5 minutes, add a defender or reduce the space.""",
+
+            "U14": """Players are 12-14 years old.
+- High tactical complexity: positional play, structured pressing, attacking and defensive transitions, combination play.
+- Drills should replicate match situations: half-press triggers, building out from the back under pressure, third-man and fourth-man combinations.
+- Coaching points: specific tactical cues tied to team shape and game model ("the 8 drops into the half-space when the 6 has the ball", "press when the ball goes to the centre-back's weak foot").
+- The game must have positional constraints or transition rules that demand tactical discipline.
+- Players can handle multi-phase combinations and should be challenged to think ahead.""",
+
+            "U16": """Players are 14-16 years old.
+- Professional-level tactical training. Team shape, structured pressing systems, clinical finishing sequences.
+- Every drill should have a clear tactical objective linked to the team's game model.
+- Coaching points: precise, measurable, and uncompromising ("the striker's pressing trigger is the centre-back's first touch under pressure — go at 80% intensity immediately").
+- Sessions should feel demanding and purposeful — like professional training.""",
         }
 
-        prompt = f"""You are an expert youth soccer coach. Generate a session plan as individual JSON section objects.
+        system_prompt = """You are an expert youth soccer coach with 20 years of experience coaching recreational and academy players aged 4-16. You specialise in writing session plans that volunteer parent coaches — with zero formal training — can pick up and run confidently on a Saturday morning.
 
-Details:
+A great session plan has these qualities:
+1. FLOW: each section builds on the previous one. Warmup activates the skill, drills isolate and develop it, game applies it under pressure.
+2. CLARITY: setup instructions are specific enough that someone who has never run the drill can set it up in 2 minutes. Include area size, cone layout, player grouping.
+3. COACHING POINTS: always observable behaviours, never abstract concepts. Bad example: "communicate with teammates". Good example: "call your teammate's name before you want the ball, and point to where you want it".
+4. ENGAGEMENT: every drill has a competitive element — score, time challenge, or consequence. Kids disengage from drills with no stakes.
+5. FOCUS ALIGNMENT: every single drill and the game must directly develop the session focus. No filler.
+6. TIMING: durations must add up exactly to the total session length. Never pad cooldown beyond 5 minutes."""
+
+        prompt = f"""Generate a youth soccer session plan as 5 JSON objects separated by ---NEXT---
+
+SESSION DETAILS:
 - Age group: {age_group}
 - Players: {players}
-- Duration: {duration} minutes
-- Main focus: {focus}
-- Last session issue: {last_week or "None"}
+- Duration: {duration} minutes total
+- Session focus: {focus}
+- Issue from last session: {last_week or "None"}
 
-AGE GROUP GUIDANCE (follow strictly):
+AGE GROUP RULES (follow strictly — these override everything else):
 {age_guidance.get(age_group, '')}
 
-Output ONLY raw JSON objects separated by exactly: ---NEXT---
-No outer array. No extra text. No markdown.
+OUTPUT FORMAT — output ONLY raw JSON objects, no markdown, no extra text:
+{{"type":"warmup","title":"...","duration":<int>,"setup":"...","instructions":["step 1","step 2","step 3","step 4"],"coaching_points":["specific observable cue 1","specific observable cue 2","specific observable cue 3"],"why":"..."}}
+---NEXT---
+{{"type":"drill","title":"...","duration":<int>,"setup":"...","instructions":["..."],"coaching_points":["..."],"why":"..."}}
+---NEXT---
+{{"type":"drill","title":"...","duration":<int>,"setup":"...","instructions":["..."],"coaching_points":["..."],"why":"..."}}
+---NEXT---
+{{"type":"game","title":"...","duration":<int>,"setup":"...","instructions":["..."],"coaching_points":["..."],"why":"..."}}
+---NEXT---
+{{"type":"cooldown","title":"...","duration":5,"setup":"...","instructions":["..."],"coaching_points":["..."],"why":"..."}}
 
-Output 5 sections in this order: warmup, drill, drill, game, cooldown.
-Separate each with ---NEXT--- on its own line.
-
-Each section must match exactly:
-{{"type":"warmup|drill|game|cooldown","title":"...","duration":<int>,"setup":"...","instructions":["..."],"coaching_points":["..."],"why":"..."}}
-
-Time allocation: warmup 10-15%, each drill 20-25%, game 30-35%, cooldown 5 min."""
+QUALITY RULES:
+- instructions: minimum 4 steps per section, written for someone who has never coached before
+- coaching_points: minimum 3 per section, must be specific and observable — not abstract
+- setup: must state area size, number of cones/balls, and how players are organised
+- durations: warmup 10-15%, each drill 20-25%, game 30-35%, cooldown 5 min — must total exactly {duration} minutes
+- game section: must include a specific rule that rewards the {focus} focus"""
 
         buffer = ""
         with client.messages.stream(
             model="claude-sonnet-4-6",
-            max_tokens=2500,
+            max_tokens=4500,
+            system=system_prompt,
             messages=[{"role": "user", "content": prompt}],
         ) as stream:
             for text in stream.text_stream:
