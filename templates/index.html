@@ -801,6 +801,51 @@
       .section-title, .plan-title { color: black; }
       .setup-block, .coaching-block, .why-block { background: #f9f9f9; }
     }
+
+    /* FEEDBACK WIDGET */
+    .feedback-fab {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 0.5rem 1rem;
+      font-size: 0.78rem;
+      color: var(--muted);
+      cursor: pointer;
+      z-index: 50;
+      transition: all 0.2s;
+    }
+    .feedback-fab:hover { border-color: var(--green); color: var(--green-light); }
+    .feedback-modal-bg {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(8,12,8,0.85);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+    .feedback-modal-bg.open { display: flex; }
+    .feedback-modal {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      width: 100%;
+      max-width: 420px;
+    }
+    .feedback-modal-title { font-size: 1rem; font-weight: 700; color: var(--white); margin-bottom: 0.35rem; }
+    .feedback-modal-sub   { font-size: 0.8rem; color: var(--muted); margin-bottom: 1rem; }
+    .feedback-modal textarea { width: 100%; min-height: 90px; resize: vertical; }
+    .feedback-modal-actions { display: flex; gap: 0.75rem; margin-top: 0.85rem; justify-content: flex-end; }
+    .btn-feedback-cancel { background: transparent; border: 1px solid var(--border); color: var(--muted); border-radius: 7px; padding: 0.5rem 1rem; font-size: 0.83rem; cursor: pointer; }
+    .btn-feedback-cancel:hover { border-color: var(--green); color: var(--text); }
+    .btn-feedback-send { background: var(--green); border: none; color: white; border-radius: 7px; padding: 0.5rem 1.2rem; font-size: 0.83rem; font-weight: 600; cursor: pointer; }
+    .btn-feedback-send:hover { background: #15803d; }
+    .feedback-sent { font-size: 0.82rem; color: var(--green-light); margin-top: 0.5rem; display: none; }
   </style>
 </head>
 <body>
@@ -830,6 +875,7 @@
     <a href="/" class="nav-link active">Session Planner</a>
     {% if local %}
     <a href="/progress" class="nav-link">Progress</a>
+    <a href="/analytics" class="nav-link">Analytics</a>
     <a href="/plan" class="nav-link">Business Plan</a>
     {% endif %}
   </div>
@@ -840,6 +886,7 @@
   <a href="/" class="active">Session Planner</a>
   {% if local %}
   <a href="/progress">Progress</a>
+  <a href="/analytics">Analytics</a>
   <a href="/plan">Business Plan</a>
   {% endif %}
 </div>
@@ -997,6 +1044,22 @@
 
 </div>
 
+<!-- FEEDBACK WIDGET -->
+<button class="feedback-fab" onclick="openFeedback()">Feedback</button>
+
+<div class="feedback-modal-bg" id="feedback-modal-bg" onclick="closeFeedbackOnBg(event)">
+  <div class="feedback-modal">
+    <div class="feedback-modal-title">Leave feedback</div>
+    <div class="feedback-modal-sub">What's working? What's missing? Any bugs?</div>
+    <textarea id="feedback-text" placeholder="Your feedback..."></textarea>
+    <div class="feedback-modal-actions">
+      <button class="btn-feedback-cancel" onclick="closeFeedback()">Cancel</button>
+      <button class="btn-feedback-send" onclick="submitFeedback()">Send</button>
+    </div>
+    <div class="feedback-sent" id="feedback-sent">Thanks — feedback saved.</div>
+  </div>
+</div>
+
 <script>
   function buildSectionCard(s) {
     const badgeClass = { warmup:'badge-warmup', drill:'badge-drill', game:'badge-game', cooldown:'badge-cooldown' }[s.type] || 'badge-drill';
@@ -1051,6 +1114,7 @@
   function toggleFieldMode() {
     document.body.classList.toggle('field-mode');
     const isField = document.body.classList.contains('field-mode');
+    track('field_view_toggled', { active: isField });
     const btn = document.getElementById('field-btn');
     if (btn) { btn.classList.toggle('active', isField); btn.textContent = isField ? 'Exit Field View' : 'Field View'; }
     const btnP = document.getElementById('field-btn-progress');
@@ -1116,6 +1180,7 @@
   }
 
   function shareSession() {
+    track('share_clicked');
     const title    = document.getElementById('plan-title-text')?.textContent || 'Session Plan';
     const players  = document.getElementById('plan-tag-players')?.textContent || '';
     const duration = document.getElementById('plan-tag-duration')?.textContent || '';
@@ -1323,6 +1388,40 @@
     .then(() => {
       document.getElementById('rating-saved').style.display = 'block';
     });
+  }
+
+  function track(event, data = {}) {
+    fetch('/track', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ event, ...data }),
+    }).catch(() => {});
+  }
+
+  function openFeedback() {
+    document.getElementById('feedback-modal-bg').classList.add('open');
+    document.getElementById('feedback-text').focus();
+  }
+  function closeFeedback() {
+    document.getElementById('feedback-modal-bg').classList.remove('open');
+  }
+  function closeFeedbackOnBg(e) {
+    if (e.target === document.getElementById('feedback-modal-bg')) closeFeedback();
+  }
+  function submitFeedback() {
+    const msg = document.getElementById('feedback-text').value.trim();
+    if (!msg) return;
+    fetch('/feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: msg, page: '/' }),
+    }).catch(() => {});
+    document.getElementById('feedback-text').value = '';
+    document.getElementById('feedback-sent').style.display = 'block';
+    setTimeout(() => {
+      closeFeedback();
+      document.getElementById('feedback-sent').style.display = 'none';
+    }, 1800);
   }
 </script>
 

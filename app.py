@@ -21,7 +21,15 @@ def parse_json(raw: str) -> dict:
 
 DATA_DIR = Path(__file__).parent / "data"
 DATA_DIR.mkdir(exist_ok=True)
-RATINGS_FILE = DATA_DIR / "ratings.json"
+RATINGS_FILE  = DATA_DIR / "ratings.json"
+EVENTS_FILE   = DATA_DIR / "events.json"
+FEEDBACK_FILE = DATA_DIR / "feedback.json"
+
+
+def log_event(event: str, data: dict = {}) -> None:
+    events = json.loads(EVENTS_FILE.read_text()) if EVENTS_FILE.exists() else []
+    events.append({"timestamp": datetime.now().isoformat(), "event": event, "data": data})
+    EVENTS_FILE.write_text(json.dumps(events, indent=2))
 
 # ─── Toggle this to False and set ANTHROPIC_API_KEY env var when ready ───────
 MOCK_MODE = False
@@ -275,6 +283,7 @@ Return raw JSON only — no markdown, no text outside the JSON:
 
 @app.route("/", methods=["GET"])
 def index():
+    log_event("page_view", {"path": "/"})
     return render_template("index.html", plan=None, local=LOCAL)
 
 
@@ -307,6 +316,7 @@ def stream_plan():
 
     def generate():
         meta = {"age_group": age_group, "players": players, "duration": duration, "focus": focus}
+        log_event("plan_generated", {"age_group": age_group, "focus": focus, "players": players, "duration": duration})
         yield json.dumps(meta) + DELIMITER
 
         if MOCK_MODE:
@@ -485,6 +495,68 @@ def evaluations():
 def clear_ratings():
     RATINGS_FILE.write_text("[]")
     return jsonify({"cleared": True})
+
+
+@app.route("/track", methods=["POST"])
+def track():
+    data = request.get_json(silent=True) or {}
+    event = data.pop("event", "unknown")
+    log_event(event, data)
+    return jsonify({"ok": True})
+
+
+@app.route("/feedback", methods=["POST"])
+def feedback():
+    data = request.get_json(silent=True) or {}
+    entries = json.loads(FEEDBACK_FILE.read_text()) if FEEDBACK_FILE.exists() else []
+    entries.append({
+        "timestamp": datetime.now().isoformat(),
+        "message":   data.get("message", "").strip(),
+        "page":      data.get("page", "/"),
+    })
+    FEEDBACK_FILE.write_text(json.dumps(entries, indent=2))
+    return jsonify({"saved": True})
+
+
+@app.route("/analytics")
+def analytics():
+    if not LOCAL:
+        return "", 404
+
+    from collections import defaultdict
+
+    events           = json.loads(EVENTS_FILE.read_text())   if EVENTS_FILE.exists()   else []
+    feedback_entries = json.loads(FEEDBACK_FILE.read_text()) if FEEDBACK_FILE.exists() else []
+    ratings          = json.loads(RATINGS_FILE.read_text())  if RATINGS_FILE.exists()  else []
+
+    page_views      = sum(1 for e in events if e["event"] == "page_view")
+    plans_generated = [e for e in events if e["event"] == "plan_generated"]
+
+    age_counts: dict[str, int]   = defaultdict(int)
+    focus_counts: dict[str, int] = defaultdict(int)
+    for p in plans_generated:
+        age_counts[p["data"].get("age_group", "Unknown")] += 1
+        focus_counts[p["data"].get("focus", "Unknown")]   += 1
+
+    daily: dict[str, int] = defaultdict(int)
+    for e in events:
+        daily[e["timestamp"][:10]] += 1
+
+    avg_rating = round(sum(r["rating"] for r in ratings) / len(ratings), 1) if ratings else 0
+
+    return render_template(
+        "analytics.html",
+        page_views     = page_views,
+        plans_count    = len(plans_generated),
+        age_counts     = sorted(age_counts.items()),
+        focus_counts   = sorted(focus_counts.items()),
+        daily          = sorted(daily.items())[-14:],
+        ratings        = list(reversed(ratings[-10:])),
+        avg_rating     = avg_rating,
+        ratings_count  = len(ratings),
+        feedback       = list(reversed(feedback_entries[-20:])),
+        local          = LOCAL,
+    )
 
 
 @app.route("/plan")
