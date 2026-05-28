@@ -520,8 +520,10 @@ def feedback():
 
 @app.route("/analytics")
 def analytics():
+    analytics_key = os.environ.get("ANALYTICS_KEY")
     if not LOCAL:
-        return "", 404
+        if not analytics_key or request.args.get("key") != analytics_key:
+            return "", 404
 
     from collections import defaultdict
 

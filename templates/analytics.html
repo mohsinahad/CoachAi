@@ -74,7 +74,7 @@
   <div class="nav-links">
     <a href="/" class="nav-link">Session Planner</a>
     <a href="/progress" class="nav-link">Progress</a>
-    <a href="/analytics" class="nav-link active">Analytics</a>
+    <a href="/analytics{{ ('?key=' + request.args.get('key')) if request.args.get('key') else '' }}" class="nav-link active">Analytics</a>
     <a href="/plan" class="nav-link">Business Plan</a>
   </div>
 </nav>
