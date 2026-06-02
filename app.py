@@ -471,23 +471,39 @@ STRICT RULES — no exceptions:
 - game: scoring rule must require {focus} (e.g. "goal only counts after 3 {focus.lower()} actions")"""
 
             buffer = ""
-            with client.messages.stream(
-                model="claude-haiku-4-5-20251001",
-                max_tokens=2500,
-                system=SYSTEM_PROMPT,
-                messages=[{"role": "user", "content": prompt}],
-            ) as stream:
-                for text in stream.text_stream:
-                    yield text
-                    buffer += text
-                    while DELIMITER.strip() in buffer:
-                        parts = buffer.split(DELIMITER.strip(), 1)
-                        if parts[0].strip():
-                            yield DELIMITER
-                        buffer = parts[1] if len(parts) > 1 else ""
+            tokens_yielded = 0
+            last_err: Exception | None = None
 
-            if buffer.strip():
-                yield DELIMITER
+            for attempt in range(3):
+                if attempt > 0:
+                    time.sleep(2 ** (attempt - 1))  # 1s, then 2s
+                try:
+                    with client.messages.stream(
+                        model="claude-haiku-4-5-20251001",
+                        max_tokens=2500,
+                        system=SYSTEM_PROMPT,
+                        messages=[{"role": "user", "content": prompt}],
+                    ) as stream:
+                        for text in stream.text_stream:
+                            yield text
+                            tokens_yielded += 1
+                            buffer += text
+                            while DELIMITER.strip() in buffer:
+                                parts = buffer.split(DELIMITER.strip(), 1)
+                                if parts[0].strip():
+                                    yield DELIMITER
+                                buffer = parts[1] if len(parts) > 1 else ""
+                    if buffer.strip():
+                        yield DELIMITER
+                    last_err = None
+                    break
+                except Exception as err:
+                    last_err = err
+                    if tokens_yielded > 0:
+                        raise  # mid-stream — can't retry, partial content already sent
+
+            if last_err:
+                raise last_err
 
             log_perf("stream_plan", int((time.time() - t_start) * 1000), "success", req_meta)
 
