@@ -2,8 +2,9 @@ import os
 import re
 import json
 import time
+import threading
 import traceback
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from flask import Flask, render_template, request, send_file, jsonify, Response, stream_with_context
 
@@ -28,6 +29,217 @@ EVENTS_FILE   = DATA_DIR / "events.json"
 FEEDBACK_FILE = DATA_DIR / "feedback.json"
 PERF_FILE     = DATA_DIR / "perf.json"
 ERRORS_FILE   = DATA_DIR / "errors.json"
+CACHE_FILE    = DATA_DIR / "plan_cache.json"
+
+# ── Cache config ──────────────────────────────────────────────────────────────
+AGE_GROUPS      = ["U6", "U8", "U10", "U12", "U14", "U16"]
+FOCUS_AREAS     = ["Passing", "Defending", "Finishing", "Dribbling", "Fitness", "Teamwork"]
+PLANS_PER_COMBO = 3
+CACHE_TTL_HOURS = 24
+
+# ── Shared prompt content (used by both streaming and cache generation) ────────
+AGE_GUIDANCE: dict[str, str] = {
+    "U6": """Players are 4-6 years old.
+- Activities must be GAMES not drills: tag, colours, animals, treasure hunts with a ball. No standing in lines.
+- Zero tactics, zero positions, zero formations.
+- Every child must have a ball or be actively moving at all times.
+- Switch activities every 5-6 minutes — attention span is very short.
+- Coaching points: maximum 1 per activity, must be physical and joyful ("kick it as hard as you can!", "dribble to the cone and back").
+- The session should feel like playtime that happens to use a ball.""",
+
+    "U8": """Players are 6-8 years old.
+- Introduce basic skills (dribbling, passing, shooting) through fun competitive games.
+- Every child should have a ball or be actively involved — no long queues.
+- Light competition works well: first team to score, beat the clock, score in 3 gates.
+- Max 10 minutes per activity before moving on.
+- Coaching points: maximum 2 per drill, concrete and physical ("use the inside of your foot", "look at the goal before you shoot").
+- Keep instructions short — demonstrate, don't lecture.""",
+
+    "U10": """Players are 8-10 years old.
+- They know HOW to kick and pass — now teach WHEN, WHERE, and WHY.
+- Every passing drill must include MOVEMENT after the pass — never stationary passing lines.
+- Use 2v1 and 3v2 situations to introduce decision-making under light pressure.
+- Rondos (3v1, 4v2 in a small grid) are excellent for this age.
+- Competition keeps engagement: award points, use scoreboards, create mini-tournaments.
+- Coaching points must be specific and observable: "receive on your back foot so you can see the field", "pass to your teammate's front foot", "move immediately after passing — don't watch".
+- The small-sided game must include a rule that directly rewards the session focus (e.g. for passing: a bonus point for completing 5 consecutive passes before scoring).
+- Avoid abstract language — everything must be something they can immediately do.""",
+
+    "U12": """Players are 10-12 years old.
+CRITICAL: Do NOT use basic technique cues — they already know how to pass, dribble, and shoot.
+- Focus entirely on TACTICAL concepts: through balls, one-twos, third-man runs, pressing triggers, switching the point of attack, creating and exploiting space behind the defensive line.
+- Drills must have pressure and decision-making: defenders, time limits, or numerical disadvantages.
+- Use 4v2, 5v2, 6v4 rondos and combination play grids with live defenders.
+- Coaching points must be tactical and specific: "play the third-man when the first defender commits to the ball", "trigger the press when the pass goes backwards or to the goalkeeper", "switch play when you see the far side is open".
+- The game must replicate a realistic match situation — positional overloads, transition moments, or directional play.
+- Challenge them: if a drill feels too easy after 5 minutes, add a defender or reduce the space.""",
+
+    "U14": """Players are 12-14 years old.
+- High tactical complexity: positional play, structured pressing, attacking and defensive transitions, combination play.
+- Drills should replicate match situations: half-press triggers, building out from the back under pressure, third-man and fourth-man combinations.
+- Coaching points: specific tactical cues tied to team shape and game model ("the 8 drops into the half-space when the 6 has the ball", "press when the ball goes to the centre-back's weak foot").
+- The game must have positional constraints or transition rules that demand tactical discipline.
+- Players can handle multi-phase combinations and should be challenged to think ahead.""",
+
+    "U16": """Players are 14-16 years old.
+- Professional-level tactical training. Team shape, structured pressing systems, clinical finishing sequences.
+- Every drill should have a clear tactical objective linked to the team's game model.
+- Coaching points: precise, measurable, and uncompromising ("the striker's pressing trigger is the centre-back's first touch under pressure — go at 80% intensity immediately").
+- Sessions should feel demanding and purposeful — like professional training.""",
+}
+
+SYSTEM_PROMPT = """You are an expert youth soccer coach with 20 years of experience coaching recreational and academy players aged 4-16. You specialise in writing session plans that volunteer parent coaches — with zero formal training — can pick up and run confidently on a Saturday morning.
+
+A great session plan has these qualities:
+1. FLOW: each section builds on the previous one. Warmup activates the skill, drills isolate and develop it, game applies it under pressure.
+2. CLARITY: setup instructions are specific enough that someone who has never run the drill can set it up in 2 minutes. Include area size, cone layout, player grouping.
+3. COACHING POINTS: always observable behaviours, never abstract concepts. Bad example: "communicate with teammates". Good example: "call your teammate's name before you want the ball, and point to where you want it".
+4. ENGAGEMENT: every drill has a competitive element — score, time challenge, or consequence. Kids disengage from drills with no stakes.
+5. FOCUS ALIGNMENT: every single drill and the game must directly develop the session focus. No filler.
+6. TIMING: durations must add up exactly to the total session length. Never pad cooldown beyond 5 minutes."""
+
+# ── Cache helpers ──────────────────────────────────────────────────────────────
+
+_cache_filling = False
+_cache_fill_lock = threading.Lock()
+
+
+def load_cache() -> dict:
+    if CACHE_FILE.exists():
+        try:
+            return json.loads(CACHE_FILE.read_text())
+        except (json.JSONDecodeError, OSError):
+            return {}
+    return {}
+
+
+def save_cache(cache: dict) -> None:
+    CACHE_FILE.write_text(json.dumps(cache, indent=2))
+
+
+def cache_key(age_group: str, focus: str) -> str:
+    return f"{age_group}_{focus}"
+
+
+def is_cache_stale(cache: dict) -> bool:
+    ts = cache.get("generated_at")
+    if not ts:
+        return True
+    return datetime.now() - datetime.fromisoformat(ts) > timedelta(hours=CACHE_TTL_HOURS)
+
+
+def get_cached_plan(age_group: str, focus: str) -> dict | None:
+    cache = load_cache()
+    key = cache_key(age_group, focus)
+    plans = cache.get("plans", {}).get(key, [])
+    if not plans:
+        return None
+    idx = cache.get("indices", {}).get(key, 0)
+    plan = plans[idx % len(plans)]
+    cache.setdefault("indices", {})[key] = (idx + 1) % len(plans)
+    save_cache(cache)
+    return plan
+
+
+def generate_plan_sync(age_group: str, focus: str) -> dict:
+    import anthropic
+
+    client = anthropic.Anthropic(
+        api_key=os.environ.get("AI_INTEGRATIONS_ANTHROPIC_API_KEY"),
+        base_url=os.environ.get("AI_INTEGRATIONS_ANTHROPIC_BASE_URL"),
+    )
+
+    prompt = f"""Generate a youth soccer session plan as 5 JSON objects separated by ---NEXT---
+
+SESSION DETAILS:
+- Age group: {age_group}
+- Players: 12
+- Duration: 75 minutes total
+- Session focus: {focus}
+- Issue from last session: None
+
+AGE GROUP RULES (follow strictly — these override everything else):
+{AGE_GUIDANCE.get(age_group, '')}
+
+OUTPUT FORMAT — output ONLY raw JSON objects, no markdown, no extra text:
+{{"type":"warmup","title":"...","duration":<int>,"setup":"...","instructions":["step 1","step 2","step 3","step 4"],"coaching_points":["specific observable cue 1","specific observable cue 2","specific observable cue 3"],"why":"..."}}
+---NEXT---
+{{"type":"drill","title":"...","duration":<int>,"setup":"...","instructions":["..."],"coaching_points":["..."],"why":"..."}}
+---NEXT---
+{{"type":"drill","title":"...","duration":<int>,"setup":"...","instructions":["..."],"coaching_points":["..."],"why":"..."}}
+---NEXT---
+{{"type":"game","title":"...","duration":<int>,"setup":"...","instructions":["..."],"coaching_points":["..."],"why":"..."}}
+---NEXT---
+{{"type":"cooldown","title":"...","duration":5,"setup":"...","instructions":["..."],"coaching_points":["..."],"why":"..."}}
+
+QUALITY RULES:
+- instructions: minimum 4 steps per section, written for someone who has never coached before
+- coaching_points: minimum 3 per section, must be specific and observable — not abstract
+- setup: must state area size, number of cones/balls, and how players are organised
+- durations: warmup 10-15%, each drill 20-25%, game 30-35%, cooldown 5 min — must total exactly 75 minutes
+- game section: must include a specific rule that rewards the {focus} focus"""
+
+    message = client.messages.create(
+        model="claude-haiku-4-5-20251001",
+        max_tokens=4000,
+        system=SYSTEM_PROMPT,
+        messages=[{"role": "user", "content": prompt}],
+    )
+
+    raw = message.content[0].text
+    sections: list[dict] = []
+    for chunk in raw.split("---NEXT---"):
+        chunk = chunk.strip()
+        if chunk:
+            try:
+                sections.append(parse_json(chunk))
+            except (json.JSONDecodeError, ValueError):
+                pass
+
+    return {
+        "age_group": age_group,
+        "players":   12,
+        "duration":  75,
+        "focus":     focus,
+        "sections":  sections,
+    }
+
+
+def fill_cache_background() -> None:
+    global _cache_filling
+    with _cache_fill_lock:
+        if _cache_filling:
+            return
+        _cache_filling = True
+
+    try:
+        cache: dict = {"generated_at": datetime.now().isoformat(), "plans": {}, "indices": {}}
+        save_cache(cache)
+
+        for age_group in AGE_GROUPS:
+            for focus in FOCUS_AREAS:
+                key = cache_key(age_group, focus)
+                plans: list[dict] = []
+                for _ in range(PLANS_PER_COMBO):
+                    try:
+                        plan = generate_plan_sync(age_group, focus)
+                        if plan.get("sections"):
+                            plans.append(plan)
+                            cache["plans"][key] = plans
+                            save_cache(cache)
+                    except Exception:
+                        pass
+    finally:
+        with _cache_fill_lock:
+            _cache_filling = False
+
+
+def ensure_cache_warm() -> None:
+    if MOCK_MODE:
+        return
+    cache = load_cache()
+    if not cache.get("plans") or is_cache_stale(cache):
+        threading.Thread(target=fill_cache_background, daemon=True).start()
 
 
 def _append_json(path: Path, entry: dict) -> None:
@@ -312,6 +524,7 @@ Return raw JSON only — no markdown, no text outside the JSON:
 
 @app.route("/", methods=["GET"])
 def index():
+    ensure_cache_warm()
     log_event("page_view", {
         "path":       "/",
         "ip":         request.headers.get("X-Forwarded-For", request.remote_addr),
@@ -375,68 +588,19 @@ def stream_plan():
                 log_perf("stream_plan", int((time.time() - t_start) * 1000), "success", req_meta)
                 return
 
+            # Check cache first — serve instantly if available
+            cached = get_cached_plan(age_group, focus)
+            if cached:
+                for section in cached["sections"]:
+                    yield json.dumps(section) + DELIMITER
+                log_perf("stream_plan", int((time.time() - t_start) * 1000), "cache_hit", req_meta)
+                return
+
             import anthropic
-            client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
-
-            age_guidance = {
-                "U6": """Players are 4-6 years old.
-- Activities must be GAMES not drills: tag, colours, animals, treasure hunts with a ball. No standing in lines.
-- Zero tactics, zero positions, zero formations.
-- Every child must have a ball or be actively moving at all times.
-- Switch activities every 5-6 minutes — attention span is very short.
-- Coaching points: maximum 1 per activity, must be physical and joyful ("kick it as hard as you can!", "dribble to the cone and back").
-- The session should feel like playtime that happens to use a ball.""",
-
-                "U8": """Players are 6-8 years old.
-- Introduce basic skills (dribbling, passing, shooting) through fun competitive games.
-- Every child should have a ball or be actively involved — no long queues.
-- Light competition works well: first team to score, beat the clock, score in 3 gates.
-- Max 10 minutes per activity before moving on.
-- Coaching points: maximum 2 per drill, concrete and physical ("use the inside of your foot", "look at the goal before you shoot").
-- Keep instructions short — demonstrate, don't lecture.""",
-
-                "U10": """Players are 8-10 years old.
-- They know HOW to kick and pass — now teach WHEN, WHERE, and WHY.
-- Every passing drill must include MOVEMENT after the pass — never stationary passing lines.
-- Use 2v1 and 3v2 situations to introduce decision-making under light pressure.
-- Rondos (3v1, 4v2 in a small grid) are excellent for this age.
-- Competition keeps engagement: award points, use scoreboards, create mini-tournaments.
-- Coaching points must be specific and observable: "receive on your back foot so you can see the field", "pass to your teammate's front foot", "move immediately after passing — don't watch".
-- The small-sided game must include a rule that directly rewards the session focus (e.g. for passing: a bonus point for completing 5 consecutive passes before scoring).
-- Avoid abstract language — everything must be something they can immediately do.""",
-
-                "U12": """Players are 10-12 years old.
-CRITICAL: Do NOT use basic technique cues — they already know how to pass, dribble, and shoot.
-- Focus entirely on TACTICAL concepts: through balls, one-twos, third-man runs, pressing triggers, switching the point of attack, creating and exploiting space behind the defensive line.
-- Drills must have pressure and decision-making: defenders, time limits, or numerical disadvantages.
-- Use 4v2, 5v2, 6v4 rondos and combination play grids with live defenders.
-- Coaching points must be tactical and specific: "play the third-man when the first defender commits to the ball", "trigger the press when the pass goes backwards or to the goalkeeper", "switch play when you see the far side is open".
-- The game must replicate a realistic match situation — positional overloads, transition moments, or directional play.
-- Challenge them: if a drill feels too easy after 5 minutes, add a defender or reduce the space.""",
-
-                "U14": """Players are 12-14 years old.
-- High tactical complexity: positional play, structured pressing, attacking and defensive transitions, combination play.
-- Drills should replicate match situations: half-press triggers, building out from the back under pressure, third-man and fourth-man combinations.
-- Coaching points: specific tactical cues tied to team shape and game model ("the 8 drops into the half-space when the 6 has the ball", "press when the ball goes to the centre-back's weak foot").
-- The game must have positional constraints or transition rules that demand tactical discipline.
-- Players can handle multi-phase combinations and should be challenged to think ahead.""",
-
-                "U16": """Players are 14-16 years old.
-- Professional-level tactical training. Team shape, structured pressing systems, clinical finishing sequences.
-- Every drill should have a clear tactical objective linked to the team's game model.
-- Coaching points: precise, measurable, and uncompromising ("the striker's pressing trigger is the centre-back's first touch under pressure — go at 80% intensity immediately").
-- Sessions should feel demanding and purposeful — like professional training.""",
-            }
-
-            system_prompt = """You are an expert youth soccer coach with 20 years of experience coaching recreational and academy players aged 4-16. You specialise in writing session plans that volunteer parent coaches — with zero formal training — can pick up and run confidently on a Saturday morning.
-
-A great session plan has these qualities:
-1. FLOW: each section builds on the previous one. Warmup activates the skill, drills isolate and develop it, game applies it under pressure.
-2. CLARITY: setup instructions are specific enough that someone who has never run the drill can set it up in 2 minutes. Include area size, cone layout, player grouping.
-3. COACHING POINTS: always observable behaviours, never abstract concepts. Bad example: "communicate with teammates". Good example: "call your teammate's name before you want the ball, and point to where you want it".
-4. ENGAGEMENT: every drill has a competitive element — score, time challenge, or consequence. Kids disengage from drills with no stakes.
-5. FOCUS ALIGNMENT: every single drill and the game must directly develop the session focus. No filler.
-6. TIMING: durations must add up exactly to the total session length. Never pad cooldown beyond 5 minutes."""
+            client = anthropic.Anthropic(
+                api_key=os.environ.get("AI_INTEGRATIONS_ANTHROPIC_API_KEY"),
+                base_url=os.environ.get("AI_INTEGRATIONS_ANTHROPIC_BASE_URL"),
+            )
 
             prompt = f"""Generate a youth soccer session plan as 5 JSON objects separated by ---NEXT---
 
@@ -448,7 +612,7 @@ SESSION DETAILS:
 - Issue from last session: {last_week or "None"}
 
 AGE GROUP RULES (follow strictly — these override everything else):
-{age_guidance.get(age_group, '')}
+{AGE_GUIDANCE.get(age_group, '')}
 
 OUTPUT FORMAT — output ONLY raw JSON objects, no markdown, no extra text:
 {{"type":"warmup","title":"...","duration":<int>,"setup":"...","instructions":["step 1","step 2","step 3","step 4"],"coaching_points":["specific observable cue 1","specific observable cue 2","specific observable cue 3"],"why":"..."}}
@@ -472,7 +636,7 @@ QUALITY RULES:
             with client.messages.stream(
                 model="claude-haiku-4-5-20251001",
                 max_tokens=4000,
-                system=system_prompt,
+                system=SYSTEM_PROMPT,
                 messages=[{"role": "user", "content": prompt}],
             ) as stream:
                 for text in stream.text_stream:
@@ -654,6 +818,25 @@ def business_plan():
 @app.route("/progress")
 def progress():
     return render_template("progress.html")
+
+
+@app.route("/cache/status")
+def cache_status():
+    if not LOCAL:
+        return "", 404
+    cache = load_cache()
+    total_plans  = sum(len(v) for v in cache.get("plans", {}).values())
+    total_combos = len(AGE_GROUPS) * len(FOCUS_AREAS)
+    filled_combos = sum(1 for v in cache.get("plans", {}).values() if len(v) >= PLANS_PER_COMBO)
+    return jsonify({
+        "generated_at":   cache.get("generated_at"),
+        "is_stale":       is_cache_stale(cache),
+        "total_plans":    total_plans,
+        "total_combos":   total_combos,
+        "filled_combos":  filled_combos,
+        "expected_plans": total_combos * PLANS_PER_COMBO,
+        "filling":        _cache_filling,
+    })
 
 
 if __name__ == "__main__":
