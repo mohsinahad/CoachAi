@@ -2,9 +2,8 @@ import os
 import re
 import json
 import time
-import threading
 import traceback
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 from flask import Flask, render_template, request, send_file, jsonify, Response, stream_with_context
 
@@ -29,15 +28,8 @@ EVENTS_FILE   = DATA_DIR / "events.json"
 FEEDBACK_FILE = DATA_DIR / "feedback.json"
 PERF_FILE     = DATA_DIR / "perf.json"
 ERRORS_FILE   = DATA_DIR / "errors.json"
-CACHE_FILE    = DATA_DIR / "plan_cache.json"
 
-# ── Cache config ──────────────────────────────────────────────────────────────
-AGE_GROUPS      = ["U6", "U8", "U10", "U12", "U14", "U16"]
-FOCUS_AREAS     = ["Passing", "Defending", "Finishing", "Dribbling", "Fitness", "Teamwork"]
-PLANS_PER_COMBO = 3
-CACHE_TTL_HOURS = 24
-
-# ── Shared prompt content (used by both streaming and cache generation) ────────
+# ── Prompt content ────────────────────────────────────────────────────────────
 AGE_GUIDANCE: dict[str, str] = {
     "U6": """Players are 4-6 years old.
 - Activities must be GAMES not drills: tag, colours, animals, treasure hunts with a ball. No standing in lines.
@@ -97,149 +89,6 @@ A great session plan has these qualities:
 4. ENGAGEMENT: every drill has a competitive element — score, time challenge, or consequence. Kids disengage from drills with no stakes.
 5. FOCUS ALIGNMENT: every single drill and the game must directly develop the session focus. No filler.
 6. TIMING: durations must add up exactly to the total session length. Never pad cooldown beyond 5 minutes."""
-
-# ── Cache helpers ──────────────────────────────────────────────────────────────
-
-_cache_filling = False
-_cache_fill_lock = threading.Lock()
-
-
-def load_cache() -> dict:
-    if CACHE_FILE.exists():
-        try:
-            return json.loads(CACHE_FILE.read_text())
-        except (json.JSONDecodeError, OSError):
-            return {}
-    return {}
-
-
-def save_cache(cache: dict) -> None:
-    CACHE_FILE.write_text(json.dumps(cache, indent=2))
-
-
-def cache_key(age_group: str, focus: str) -> str:
-    return f"{age_group}_{focus}"
-
-
-def is_cache_stale(cache: dict) -> bool:
-    ts = cache.get("generated_at")
-    if not ts:
-        return True
-    return datetime.now() - datetime.fromisoformat(ts) > timedelta(hours=CACHE_TTL_HOURS)
-
-
-def get_cached_plan(age_group: str, focus: str) -> dict | None:
-    cache = load_cache()
-    key = cache_key(age_group, focus)
-    plans = cache.get("plans", {}).get(key, [])
-    if not plans:
-        return None
-    idx = cache.get("indices", {}).get(key, 0)
-    plan = plans[idx % len(plans)]
-    cache.setdefault("indices", {})[key] = (idx + 1) % len(plans)
-    save_cache(cache)
-    return plan
-
-
-def generate_plan_sync(age_group: str, focus: str) -> dict:
-    import anthropic
-
-    client = anthropic.Anthropic(
-        api_key=os.environ.get("AI_INTEGRATIONS_ANTHROPIC_API_KEY"),
-        base_url=os.environ.get("AI_INTEGRATIONS_ANTHROPIC_BASE_URL"),
-    )
-
-    prompt = f"""Generate a youth soccer session plan as 5 JSON objects separated by ---NEXT---
-
-SESSION DETAILS:
-- Age group: {age_group}
-- Players: 12
-- Duration: 75 minutes total
-- Session focus: {focus}
-- Issue from last session: None
-
-AGE GROUP RULES (follow strictly — these override everything else):
-{AGE_GUIDANCE.get(age_group, '')}
-
-OUTPUT FORMAT — output ONLY raw JSON objects, no markdown, no extra text:
-{{"type":"warmup","title":"...","duration":<int>,"setup":"...","instructions":["step 1","step 2","step 3","step 4"],"coaching_points":["specific observable cue 1","specific observable cue 2","specific observable cue 3"],"why":"..."}}
----NEXT---
-{{"type":"drill","title":"...","duration":<int>,"setup":"...","instructions":["..."],"coaching_points":["..."],"why":"..."}}
----NEXT---
-{{"type":"drill","title":"...","duration":<int>,"setup":"...","instructions":["..."],"coaching_points":["..."],"why":"..."}}
----NEXT---
-{{"type":"game","title":"...","duration":<int>,"setup":"...","instructions":["..."],"coaching_points":["..."],"why":"..."}}
----NEXT---
-{{"type":"cooldown","title":"...","duration":5,"setup":"...","instructions":["..."],"coaching_points":["..."],"why":"..."}}
-
-QUALITY RULES:
-- instructions: minimum 4 steps per section, written for someone who has never coached before
-- coaching_points: minimum 3 per section, must be specific and observable — not abstract
-- setup: must state area size, number of cones/balls, and how players are organised
-- durations: warmup 10-15%, each drill 20-25%, game 30-35%, cooldown 5 min — must total exactly 75 minutes
-- game section: must include a specific rule that rewards the {focus} focus"""
-
-    message = client.messages.create(
-        model="claude-haiku-4-5-20251001",
-        max_tokens=4000,
-        system=SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": prompt}],
-    )
-
-    raw = message.content[0].text
-    sections: list[dict] = []
-    for chunk in raw.split("---NEXT---"):
-        chunk = chunk.strip()
-        if chunk:
-            try:
-                sections.append(parse_json(chunk))
-            except (json.JSONDecodeError, ValueError):
-                pass
-
-    return {
-        "age_group": age_group,
-        "players":   12,
-        "duration":  75,
-        "focus":     focus,
-        "sections":  sections,
-    }
-
-
-def fill_cache_background() -> None:
-    global _cache_filling
-    with _cache_fill_lock:
-        if _cache_filling:
-            return
-        _cache_filling = True
-
-    try:
-        cache: dict = {"generated_at": datetime.now().isoformat(), "plans": {}, "indices": {}}
-        save_cache(cache)
-
-        for age_group in AGE_GROUPS:
-            for focus in FOCUS_AREAS:
-                key = cache_key(age_group, focus)
-                plans: list[dict] = []
-                for _ in range(PLANS_PER_COMBO):
-                    try:
-                        plan = generate_plan_sync(age_group, focus)
-                        if plan.get("sections"):
-                            plans.append(plan)
-                            cache["plans"][key] = plans
-                            save_cache(cache)
-                    except Exception:
-                        pass
-    finally:
-        with _cache_fill_lock:
-            _cache_filling = False
-
-
-def ensure_cache_warm() -> None:
-    if MOCK_MODE:
-        return
-    cache = load_cache()
-    if not cache.get("plans") or is_cache_stale(cache):
-        threading.Thread(target=fill_cache_background, daemon=True).start()
 
 
 def _append_json(path: Path, entry: dict) -> None:
@@ -524,7 +373,6 @@ Return raw JSON only — no markdown, no text outside the JSON:
 
 @app.route("/", methods=["GET"])
 def index():
-    ensure_cache_warm()
     log_event("page_view", {
         "path":       "/",
         "ip":         request.headers.get("X-Forwarded-For", request.remote_addr),
@@ -588,79 +436,58 @@ def stream_plan():
                 log_perf("stream_plan", int((time.time() - t_start) * 1000), "success", req_meta)
                 return
 
-            # Check cache first — serve instantly if available
-            cached = get_cached_plan(age_group, focus)
-            if cached:
-                for section in cached["sections"]:
-                    yield json.dumps(section) + DELIMITER
-                log_perf("stream_plan", int((time.time() - t_start) * 1000), "cache_hit", req_meta)
-                return
-
             import anthropic
             client = anthropic.Anthropic(
                 api_key=os.environ.get("AI_INTEGRATIONS_ANTHROPIC_API_KEY"),
                 base_url=os.environ.get("AI_INTEGRATIONS_ANTHROPIC_BASE_URL"),
             )
 
-            prompt = f"""Generate a youth soccer session plan as 5 JSON objects separated by ---NEXT---
+            prompt = f"""Generate exactly 5 JSON objects for a {duration}-minute youth soccer session, each separated by ---NEXT---. Output ONLY the raw JSON — no text before, between, or after the objects.
 
-SESSION DETAILS:
-- Age group: {age_group}
-- Players: {players}
-- Duration: {duration} minutes total
-- Session focus: {focus}
-- Issue from last session: {last_week or "None"}
+SESSION:
+- Age group: {age_group} | Players: {players} | Duration: {duration} min | Focus: {focus}
+- Last session notes: {last_week or "None"}
 
-AGE GROUP RULES (follow strictly — these override everything else):
+AGE GROUP RULES — these override everything else:
 {AGE_GUIDANCE.get(age_group, '')}
 
-OUTPUT FORMAT — output ONLY raw JSON objects, no markdown, no extra text:
-{{"type":"warmup","title":"...","duration":<int>,"setup":"...","instructions":["step 1","step 2","step 3","step 4"],"coaching_points":["specific observable cue 1","specific observable cue 2","specific observable cue 3"],"why":"..."}}
+OUTPUT FORMAT (5 objects, ---NEXT--- between each, nothing else):
+{{"type":"warmup","title":"...","duration":<int>,"setup":"...","instructions":["...","...","..."],"coaching_points":["...","..."],"why":"..."}}
 ---NEXT---
-{{"type":"drill","title":"...","duration":<int>,"setup":"...","instructions":["..."],"coaching_points":["..."],"why":"..."}}
+{{"type":"drill","title":"...","duration":<int>,"setup":"...","instructions":["...","...","..."],"coaching_points":["...","..."],"why":"..."}}
 ---NEXT---
-{{"type":"drill","title":"...","duration":<int>,"setup":"...","instructions":["..."],"coaching_points":["..."],"why":"..."}}
+{{"type":"drill","title":"...","duration":<int>,"setup":"...","instructions":["...","...","..."],"coaching_points":["...","..."],"why":"..."}}
 ---NEXT---
-{{"type":"game","title":"...","duration":<int>,"setup":"...","instructions":["..."],"coaching_points":["..."],"why":"..."}}
+{{"type":"game","title":"...","duration":<int>,"setup":"...","instructions":["...","...","..."],"coaching_points":["...","..."],"why":"..."}}
 ---NEXT---
-{{"type":"cooldown","title":"...","duration":5,"setup":"...","instructions":["..."],"coaching_points":["..."],"why":"..."}}
+{{"type":"cooldown","title":"...","duration":5,"setup":"...","instructions":["...","...","..."],"coaching_points":["...","..."],"why":"..."}}
 
-QUALITY RULES:
-- instructions: minimum 4 steps per section, written for someone who has never coached before
-- coaching_points: minimum 3 per section, must be specific and observable — not abstract
-- setup: must state area size, number of cones/balls, and how players are organised
-- durations: warmup 10-15%, each drill 20-25%, game 30-35%, cooldown 5 min — must total exactly {duration} minutes
-- game section: must include a specific rule that rewards the {focus} focus"""
+STRICT RULES — no exceptions:
+- setup: exactly 1 sentence — area size, equipment, player grouping
+- instructions: exactly 3 steps, each under 20 words, written for a parent who has never coached
+- coaching_points: exactly 2 cues, each under 15 words, must describe observable behaviour (not "communicate" or "work together")
+- why: exactly 1 sentence
+- durations: warmup ~10%, each drill ~22%, game ~31%, cooldown 5 min — must total exactly {duration} min
+- game: scoring rule must require {focus} (e.g. "goal only counts after 3 {focus.lower()} actions")"""
 
             buffer = ""
             with client.messages.stream(
                 model="claude-haiku-4-5-20251001",
-                max_tokens=4000,
+                max_tokens=2500,
                 system=SYSTEM_PROMPT,
                 messages=[{"role": "user", "content": prompt}],
             ) as stream:
                 for text in stream.text_stream:
-                    yield text  # stream token immediately for live preview
+                    yield text
                     buffer += text
                     while DELIMITER.strip() in buffer:
                         parts = buffer.split(DELIMITER.strip(), 1)
-                        section_text = parts[0].strip()
-                        if section_text:
-                            try:
-                                cleaned = re.sub(r",\s*([}\]])", r"\1", section_text)
-                                json.loads(cleaned)
-                                yield DELIMITER  # signal: this section is complete
-                            except json.JSONDecodeError:
-                                pass
+                        if parts[0].strip():
+                            yield DELIMITER
                         buffer = parts[1] if len(parts) > 1 else ""
 
             if buffer.strip():
-                try:
-                    cleaned = re.sub(r",\s*([}\]])", r"\1", buffer.strip())
-                    json.loads(cleaned)
-                    yield DELIMITER
-                except json.JSONDecodeError:
-                    pass
+                yield DELIMITER
 
             log_perf("stream_plan", int((time.time() - t_start) * 1000), "success", req_meta)
 
@@ -818,25 +645,6 @@ def business_plan():
 @app.route("/progress")
 def progress():
     return render_template("progress.html")
-
-
-@app.route("/cache/status")
-def cache_status():
-    if not LOCAL:
-        return "", 404
-    cache = load_cache()
-    total_plans  = sum(len(v) for v in cache.get("plans", {}).values())
-    total_combos = len(AGE_GROUPS) * len(FOCUS_AREAS)
-    filled_combos = sum(1 for v in cache.get("plans", {}).values() if len(v) >= PLANS_PER_COMBO)
-    return jsonify({
-        "generated_at":   cache.get("generated_at"),
-        "is_stale":       is_cache_stale(cache),
-        "total_plans":    total_plans,
-        "total_combos":   total_combos,
-        "filled_combos":  filled_combos,
-        "expected_plans": total_combos * PLANS_PER_COMBO,
-        "filling":        _cache_filling,
-    })
 
 
 if __name__ == "__main__":
