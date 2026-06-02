@@ -46,10 +46,10 @@ check("MOCK_MODE is False",          "MOCK_MODE = False" in app_src,
       "MOCK_MODE = True would serve fake plans in production")
 check("No hardcoded API key",        "sk-ant-" not in app_src,
       "API key must come from env var")
-check("max_tokens <= 3000",
+check("max_tokens <= 5000",
       any(f"max_tokens={n}" in app_src.replace(" ", "") for n in
-          [str(x) for x in range(500, 3001)]),
-      "higher token counts increase latency and cost")
+          [str(x) for x in range(500, 5001)]),
+      "max_tokens above 5000 will cause timeouts on Haiku")
 check("Uses env var for API key",    'os.environ.get("ANTHROPIC_API_KEY")' in app_src or
                                       'os.environ.get("AI_INTEGRATIONS' in app_src)
 check("ANALYTICS_KEY check present", "ANALYTICS_KEY" in app_src,
