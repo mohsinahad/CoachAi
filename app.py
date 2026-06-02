@@ -17,9 +17,24 @@ def parse_json(raw: str) -> dict:
         if raw.startswith("json"):
             raw = raw[4:]
     raw = raw.strip()
-    # remove trailing commas before } or ]
     raw = re.sub(r",\s*([}\]])", r"\1", raw)
     return json.loads(raw)
+
+
+def _parse_plan_sections(raw: str) -> list[dict]:
+    raw = raw.strip()
+    if raw.startswith("```"):
+        raw = raw.split("```")[1]
+        if raw.startswith("json"):
+            raw = raw[4:]
+        raw = raw.strip().rstrip("`").strip()
+    raw = re.sub(r",\s*([}\]])", r"\1", raw)
+    parsed = json.loads(raw)
+    if isinstance(parsed, list):
+        return [s for s in parsed if isinstance(s, dict) and "type" in s]
+    if isinstance(parsed, dict) and "sections" in parsed:
+        return parsed["sections"]
+    return []
 
 DATA_DIR = Path(__file__).parent / "data"
 DATA_DIR.mkdir(exist_ok=True)
@@ -420,12 +435,11 @@ def stream_plan():
     def generate():
         t_start = time.time()
         try:
-            meta = {"age_group": age_group, "players": players, "duration": duration, "focus": focus}
-            log_event("plan_generated", {"age_group": age_group, "focus": focus, "players": players, "duration": duration, **req_meta})
-            yield json.dumps(meta) + DELIMITER
-
             if MOCK_MODE:
                 plan = get_mock_plan(age_group, players, duration, focus, last_week)
+                meta = {"age_group": age_group, "players": players, "duration": duration, "focus": focus}
+                log_event("plan_generated", {"age_group": age_group, "focus": focus, "players": players, "duration": duration, **req_meta})
+                yield json.dumps(meta) + DELIMITER
                 for section in plan["sections"]:
                     section_json = json.dumps(section)
                     chunk_size = 20
@@ -443,79 +457,61 @@ def stream_plan():
                 base_url=os.environ.get("AI_INTEGRATIONS_ANTHROPIC_BASE_URL"),
             )
 
-            prompt = f"""Generate exactly 5 JSON objects for a {duration}-minute youth soccer session. Output raw JSON only — no markdown, no code fences, no separator between objects.
+            prompt = f"""Create a {duration}-minute youth soccer training session for volunteer parent coaches.
 
-SESSION:
-- Age group: {age_group} | Players: {players} | Duration: {duration} min | Focus: {focus}
-- Last session notes: {last_week or "None"}
+Age group: {age_group} | Players: {players} | Focus: {focus}
+Last session: {last_week or "None"}
 
-AGE GROUP RULES — these override everything else:
 {AGE_GUIDANCE.get(age_group, '')}
 
-OUTPUT — 5 JSON objects one after another, nothing else:
-{{"type":"warmup","title":"...","duration":<int>,"setup":"...","instructions":["...","...","..."],"coaching_points":["...","..."],"why":"..."}}
-{{"type":"drill","title":"...","duration":<int>,"setup":"...","instructions":["...","...","..."],"coaching_points":["...","..."],"why":"..."}}
-{{"type":"drill","title":"...","duration":<int>,"setup":"...","instructions":["...","...","..."],"coaching_points":["...","..."],"why":"..."}}
-{{"type":"game","title":"...","duration":<int>,"setup":"...","instructions":["...","...","..."],"coaching_points":["...","..."],"why":"..."}}
-{{"type":"cooldown","title":"...","duration":5,"setup":"...","instructions":["...","...","..."],"coaching_points":["...","..."],"why":"..."}}
+Return ONLY a JSON array of exactly 5 objects. No markdown, no code fences, no explanation.
 
-CONTENT RULES:
-- setup: exactly 1 sentence — area size, equipment, player grouping
+[
+  {{"type":"warmup","title":"...","duration":<int>,"setup":"...","instructions":["...","...","..."],"coaching_points":["...","..."],"why":"..."}},
+  {{"type":"drill","title":"...","duration":<int>,"setup":"...","instructions":["...","...","..."],"coaching_points":["...","..."],"why":"..."}},
+  {{"type":"drill","title":"...","duration":<int>,"setup":"...","instructions":["...","...","..."],"coaching_points":["...","..."],"why":"..."}},
+  {{"type":"game","title":"...","duration":<int>,"setup":"...","instructions":["...","...","..."],"coaching_points":["...","..."],"why":"..."}},
+  {{"type":"cooldown","title":"...","duration":5,"setup":"...","instructions":["...","...","..."],"coaching_points":["...","..."],"why":"..."}}
+]
+
+Rules:
+- setup: 1 sentence — area size, equipment, player grouping
 - instructions: exactly 3 steps, each under 20 words, written for a parent who has never coached
-- coaching_points: exactly 2 cues, each under 15 words, observable behaviour only
-- why: exactly 1 sentence
-- durations: warmup ~10%, each drill ~22%, game ~31%, cooldown 5 min — must total exactly {duration} min
-- game: scoring rule must require {focus}"""
+- coaching_points: exactly 2 observable cues, each under 15 words
+- why: 1 sentence
+- durations must total exactly {duration} min (warmup ~10%, drills ~22% each, game ~31%, cooldown 5)
+- game scoring rule must require {focus}"""
 
-            tokens_yielded = 0
+            sections: list[dict] = []
             last_err: Exception | None = None
 
             for attempt in range(3):
                 if attempt > 0:
                     time.sleep(2 ** (attempt - 1))
                 try:
-                    # Detect section boundaries by JSON bracket depth — immune to any
-                    # text the model might write inside string values.
-                    depth = 0
-                    in_string = False
-                    escape = False
-
-                    with client.messages.stream(
+                    message = client.messages.create(
                         model="claude-haiku-4-5-20251001",
                         max_tokens=2500,
                         system=SYSTEM_PROMPT,
                         messages=[{"role": "user", "content": prompt}],
-                    ) as stream:
-                        for text in stream.text_stream:
-                            yield text
-                            tokens_yielded += 1
-                            for char in text:
-                                if escape:
-                                    escape = False
-                                elif in_string:
-                                    if char == '\\':
-                                        escape = True
-                                    elif char == '"':
-                                        in_string = False
-                                else:
-                                    if char == '"':
-                                        in_string = True
-                                    elif char == '{':
-                                        depth += 1
-                                    elif char == '}':
-                                        depth -= 1
-                                        if depth == 0:
-                                            yield DELIMITER
-
-                    last_err = None
-                    break
+                    )
+                    sections = _parse_plan_sections(message.content[0].text)
+                    if len(sections) >= 3:
+                        last_err = None
+                        break
+                    last_err = ValueError(f"Only {len(sections)} sections returned")
                 except Exception as err:
                     last_err = err
-                    if tokens_yielded > 0:
-                        raise
 
             if last_err:
                 raise last_err
+
+            meta = {"age_group": age_group, "players": players, "duration": duration, "focus": focus}
+            log_event("plan_generated", {"age_group": age_group, "focus": focus, "players": players, "duration": duration, **req_meta})
+            yield json.dumps(meta) + DELIMITER
+
+            for section in sections:
+                yield json.dumps(section) + DELIMITER
 
             log_perf("stream_plan", int((time.time() - t_start) * 1000), "success", req_meta)
 
