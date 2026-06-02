@@ -1,0 +1,14 @@
+[
+  {
+    "timestamp": "2026-06-02T15:10:43.334459",
+    "route": "stream_plan",
+    "error": "TypeError",
+    "message": "\"Could not resolve authentication method. Expected either api_key or auth_token to be set. Or for one of the `X-Api-Key` or `Authorization` headers to be explicitly omitted\"",
+    "traceback": "Traceback (most recent call last):\n  File \"/Users/mohsin/Claude/mohsin_projects/soccer_coach/app.py\", line 511, in generate\n    raise last_err\n  File \"/Users/mohsin/Claude/mohsin_projects/soccer_coach/app.py\", line 486, in generate\n    with client.messages.stream(\n  File \"/opt/anaconda3/lib/python3.12/site-packages/anthropic/lib/streaming/_messages.py\", line 167, in __enter__\n    raw_stream = self.__api_request()\n                 ^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/anaconda3/lib/python3.12/site-packages/anthropic/_base_client.py\", line 1364, in post\n    return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))\n                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/anaconda3/lib/python3.12/site-packages/anthropic/_base_client.py\", line 1058, in request\n    request = self._build_request(options, retries_taken=retries_taken)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/anaconda3/lib/python3.12/site-packages/anthropic/_base_client.py\", line 521, in _build_request\n    headers = self._build_headers(options, retries_taken=retries_taken)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/anaconda3/lib/python3.12/site-packages/anthropic/_base_client.py\", line 451, in _build_headers\n    self._validate_headers(headers_dict, custom_headers)\n  File \"/opt/anaconda3/lib/python3.12/site-packages/anthropic/_client.py\", line 196, in _validate_headers\n    raise TypeError(\nTypeError: \"Could not resolve authentication method. Expected either api_key or auth_token to be set. Or for one of the `X-Api-Key` or `Authorization` headers to be explicitly omitted\"\n",
+    "age_group": "U10",
+    "focus": "Passing",
+    "ip": "127.0.0.1",
+    "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36",
+    "referrer": "http://localhost:5050/"
+  }
+]

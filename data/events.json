@@ -5,5 +5,28 @@
     "data": {
       "path": "/"
     }
+  },
+  {
+    "timestamp": "2026-06-02T15:10:36.944148",
+    "event": "page_view",
+    "data": {
+      "path": "/",
+      "ip": "127.0.0.1",
+      "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36",
+      "referrer": ""
+    }
+  },
+  {
+    "timestamp": "2026-06-02T15:10:39.912883",
+    "event": "plan_generated",
+    "data": {
+      "age_group": "U10",
+      "focus": "Passing",
+      "players": 12,
+      "duration": 75,
+      "ip": "127.0.0.1",
+      "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36",
+      "referrer": "http://localhost:5050/"
+    }
   }
 ]

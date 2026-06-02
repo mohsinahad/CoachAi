@@ -438,16 +438,12 @@ def stream_plan():
 
             import anthropic
             client = anthropic.Anthropic(
-                api_key=os.environ.get("AI_INTEGRATIONS_ANTHROPIC_API_KEY"),
+                api_key=os.environ.get("AI_INTEGRATIONS_ANTHROPIC_API_KEY")
+                      or os.environ.get("ANTHROPIC_API_KEY"),
                 base_url=os.environ.get("AI_INTEGRATIONS_ANTHROPIC_BASE_URL"),
             )
 
-            prompt = f"""Generate exactly 5 JSON objects for a {duration}-minute youth soccer session. Separate each object with ||| on its own line. Output raw JSON only.
-
-CRITICAL FORMAT RULES — violations will break the parser:
-- NO backticks, NO ```json, NO markdown of any kind
-- ||| must appear ONLY between JSON objects, NEVER inside a string value
-- NO text before the first object or after the last object
+            prompt = f"""Generate exactly 5 JSON objects for a {duration}-minute youth soccer session. Output raw JSON only — no markdown, no code fences, no separator between objects.
 
 SESSION:
 - Age group: {age_group} | Players: {players} | Duration: {duration} min | Focus: {focus}
@@ -456,33 +452,34 @@ SESSION:
 AGE GROUP RULES — these override everything else:
 {AGE_GUIDANCE.get(age_group, '')}
 
-OUTPUT (exactly this structure, ||| between sections, nothing else):
+OUTPUT — 5 JSON objects one after another, nothing else:
 {{"type":"warmup","title":"...","duration":<int>,"setup":"...","instructions":["...","...","..."],"coaching_points":["...","..."],"why":"..."}}
-|||
 {{"type":"drill","title":"...","duration":<int>,"setup":"...","instructions":["...","...","..."],"coaching_points":["...","..."],"why":"..."}}
-|||
 {{"type":"drill","title":"...","duration":<int>,"setup":"...","instructions":["...","...","..."],"coaching_points":["...","..."],"why":"..."}}
-|||
 {{"type":"game","title":"...","duration":<int>,"setup":"...","instructions":["...","...","..."],"coaching_points":["...","..."],"why":"..."}}
-|||
 {{"type":"cooldown","title":"...","duration":5,"setup":"...","instructions":["...","...","..."],"coaching_points":["...","..."],"why":"..."}}
 
 CONTENT RULES:
 - setup: exactly 1 sentence — area size, equipment, player grouping
 - instructions: exactly 3 steps, each under 20 words, written for a parent who has never coached
-- coaching_points: exactly 2 cues, each under 15 words, observable behaviour only (not "communicate" or "work together")
+- coaching_points: exactly 2 cues, each under 15 words, observable behaviour only
 - why: exactly 1 sentence
 - durations: warmup ~10%, each drill ~22%, game ~31%, cooldown 5 min — must total exactly {duration} min
-- game: scoring rule must require {focus} (e.g. "goal only counts after 3 {focus.lower()} actions")"""
+- game: scoring rule must require {focus}"""
 
-            buffer = ""
             tokens_yielded = 0
             last_err: Exception | None = None
 
             for attempt in range(3):
                 if attempt > 0:
-                    time.sleep(2 ** (attempt - 1))  # 1s, then 2s
+                    time.sleep(2 ** (attempt - 1))
                 try:
+                    # Detect section boundaries by JSON bracket depth — immune to any
+                    # text the model might write inside string values.
+                    depth = 0
+                    in_string = False
+                    escape = False
+
                     with client.messages.stream(
                         model="claude-haiku-4-5-20251001",
                         max_tokens=2500,
@@ -492,20 +489,30 @@ CONTENT RULES:
                         for text in stream.text_stream:
                             yield text
                             tokens_yielded += 1
-                            buffer += text
-                            while DELIMITER.strip() in buffer:
-                                parts = buffer.split(DELIMITER.strip(), 1)
-                                if parts[0].strip():
-                                    yield DELIMITER
-                                buffer = parts[1] if len(parts) > 1 else ""
-                    if buffer.strip():
-                        yield DELIMITER
+                            for char in text:
+                                if escape:
+                                    escape = False
+                                elif in_string:
+                                    if char == '\\':
+                                        escape = True
+                                    elif char == '"':
+                                        in_string = False
+                                else:
+                                    if char == '"':
+                                        in_string = True
+                                    elif char == '{':
+                                        depth += 1
+                                    elif char == '}':
+                                        depth -= 1
+                                        if depth == 0:
+                                            yield DELIMITER
+
                     last_err = None
                     break
                 except Exception as err:
                     last_err = err
                     if tokens_yielded > 0:
-                        raise  # mid-stream — can't retry, partial content already sent
+                        raise
 
             if last_err:
                 raise last_err
