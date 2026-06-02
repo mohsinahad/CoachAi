@@ -1,4 +1,4 @@
-run = "python app.py"
+run = "gunicorn app:app --bind 0.0.0.0:5050 --timeout 120 --worker-class gevent --workers 1"
 entrypoint = "app.py"
 modules = ["python-3.11"]
 
@@ -27,7 +27,7 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python app.py"
+args = "gunicorn app:app --bind 0.0.0.0:5050 --timeout 120 --worker-class gevent --workers 1"
 waitForPort = 5050
 
 [workflows.workflow.metadata]
