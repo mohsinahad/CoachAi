@@ -144,6 +144,7 @@
       letter-spacing: 0.01em;
     }
     .btn-generate:hover { background: #15803d; }
+    .btn-generate:disabled { background: var(--green-dim); cursor: not-allowed; opacity: 0.65; }
 
     /* MOCK BADGE */
     .mock-notice {
@@ -802,6 +803,42 @@
       .setup-block, .coaching-block, .why-block { background: #f9f9f9; }
     }
 
+    /* STREAM SKELETON CARD */
+    .stream-skeleton .section-header { cursor: default; }
+    .stream-preview-body {
+      padding: 0.75rem 1.2rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+      min-height: 3rem;
+    }
+    .stream-preview-text {
+      flex: 1;
+      font-size: 0.82rem;
+      color: var(--muted);
+      line-height: 1.6;
+      font-style: italic;
+    }
+    .stream-cursor {
+      width: 2px;
+      height: 15px;
+      background: var(--green);
+      flex-shrink: 0;
+      margin-top: 3px;
+      animation: blink-cursor 0.7s step-end infinite;
+    }
+    @keyframes blink-cursor { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+    .stream-dots { display: flex; gap: 3px; align-items: center; flex-shrink: 0; }
+    .stream-dots span {
+      width: 4px; height: 4px;
+      background: var(--green-dim);
+      border-radius: 50%;
+      animation: dot 1.2s ease-in-out infinite;
+    }
+    .stream-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .stream-dots span:nth-child(3) { animation-delay: 0.4s; }
+
     /* FEEDBACK WIDGET */
     .feedback-fab {
       position: fixed;
@@ -1260,8 +1297,68 @@
     document.getElementById('duration').value = defaultDuration[this.value] || '60';
   });
 
+  function extractStreamPreview(rawText) {
+    const setupMatch = rawText.match(/"setup"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+    if (setupMatch) {
+      return setupMatch[1].replace(/\\n/g, ' ').replace(/\\"/g, '"').replace(/\\/g, '');
+    }
+    const durMatch = rawText.match(/"duration"\s*:\s*(\d+)/);
+    if (durMatch) return `${durMatch[1]} minutes — loading details...`;
+    return 'Generating...';
+  }
+
+  function updateSkeletonCard(planArea, existingCard, rawText) {
+    const typeMatch = rawText.match(/"type"\s*:\s*"(\w+)"/);
+    if (!typeMatch) return existingCard;
+
+    const sectionType = typeMatch[1];
+    const badgeClass  = { warmup:'badge-warmup', drill:'badge-drill', game:'badge-game', cooldown:'badge-cooldown' }[sectionType] || 'badge-drill';
+
+    if (!existingCard) {
+      existingCard = document.createElement('div');
+      existingCard.className = 'section-card stream-skeleton';
+      existingCard.innerHTML = `
+        <div class="section-header">
+          <div class="section-left">
+            <span class="section-badge ${badgeClass}">${sectionType}</span>
+            <span class="section-title stream-title">...</span>
+          </div>
+          <div class="stream-dots"><span></span><span></span><span></span></div>
+        </div>
+        <div class="stream-preview-body">
+          <div class="stream-preview-text">Generating...</div>
+          <div class="stream-cursor"></div>
+        </div>`;
+      existingCard.style.opacity = '0';
+      existingCard.style.transform = 'translateY(12px)';
+      existingCard.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+      planArea.appendChild(existingCard);
+      requestAnimationFrame(() => {
+        existingCard.style.opacity = '1';
+        existingCard.style.transform = 'translateY(0)';
+      });
+      existingCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    const titleMatch = rawText.match(/"title"\s*:\s*"([^"\\]*)"/);
+    if (titleMatch) {
+      const titleEl = existingCard.querySelector('.stream-title');
+      if (titleEl) titleEl.textContent = titleMatch[1];
+    }
+
+    const previewEl = existingCard.querySelector('.stream-preview-text');
+    if (previewEl) previewEl.textContent = extractStreamPreview(rawText);
+
+    return existingCard;
+  }
+
   document.querySelector('form').addEventListener('submit', async function(e) {
     e.preventDefault();
+
+    const btn = document.querySelector('.btn-generate');
+    btn.disabled = true;
+    btn.textContent = 'Generating...';
+
     startLoading();
 
     const formData = new FormData(this);
@@ -1269,16 +1366,22 @@
     if (planArea) planArea.innerHTML = '';
     document.getElementById('gen-progress').classList.remove('visible');
 
-    const metaArea   = document.getElementById('plan-meta-area');
     const headerArea = document.getElementById('plan-header-area');
     const scoreTag   = document.getElementById('ai-score-tag');
     if (scoreTag) scoreTag.style.display = 'none';
+
+    let skeletonCard = null;
+
+    const finish = () => {
+      btn.disabled = false;
+      btn.textContent = 'Generate Session Plan';
+    };
 
     try {
       const response = await fetch('/stream-plan', { method: 'POST', body: formData });
       const reader   = response.body.getReader();
       const decoder  = new TextDecoder();
-      let buffer = '';
+      let buffer  = '';
       let isFirst = true;
 
       while (true) {
@@ -1294,63 +1397,68 @@
           if (!chunk) continue;
 
           try {
-            const data = JSON.parse(chunk);
+            const cleaned = chunk.replace(/,\s*([}\]])/g, '$1');
+            const data    = JSON.parse(cleaned);
+
             if (isFirst) {
-              // metadata chunk — render plan header
               isFirst = false;
-              if (headerArea) {
-                headerArea.style.display = 'block';
-                document.getElementById('plan-title-text').textContent =
-                  `${data.age_group} · ${data.focus} Session`;
-                document.getElementById('plan-tag-players').textContent  = `${data.players} players`;
-                document.getElementById('plan-tag-duration').textContent = `${data.duration} minutes`;
-                document.getElementById('loading-overlay').classList.remove('visible');
-                document.getElementById('empty-state').style.display    = 'none';
-                // store meta for rating submission
-                window._planMeta = data;
-                initProgress();
-              }
+              headerArea.style.display = 'block';
+              document.getElementById('plan-title-text').textContent = `${data.age_group} · ${data.focus} Session`;
+              document.getElementById('plan-tag-players').textContent  = `${data.players} players`;
+              document.getElementById('plan-tag-duration').textContent = `${data.duration} minutes`;
+              document.getElementById('loading-overlay').classList.remove('visible');
+              document.getElementById('empty-state').style.display = 'none';
+              window._planMeta = data;
+              initProgress();
             } else {
-              // section chunk — render card
-              if (planArea) {
-                const card = buildSectionCard(data);
+              // replace skeleton with proper card
+              const card = buildSectionCard(data);
+              if (skeletonCard && skeletonCard.parentNode) {
+                card.style.opacity    = '1';
+                card.style.transform  = 'none';
+                skeletonCard.replaceWith(card);
+              } else {
                 planArea.appendChild(card);
-                advanceProgress();
-                card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                // trigger field view layout update
-                if (document.body.classList.contains('field-mode')) {
-                  card.querySelectorAll('.setup-block,.coaching-block,.why-block').forEach(el => el.style.display = 'none');
-                }
+              }
+              skeletonCard = null;
+              advanceProgress();
+              card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+              if (document.body.classList.contains('field-mode')) {
+                card.querySelectorAll('.setup-block,.coaching-block,.why-block').forEach(el => el.style.display = 'none');
               }
             }
-          } catch(err) { /* incomplete chunk */ }
+          } catch(err) { /* skip invalid chunk */ }
+        }
+
+        // live preview: update skeleton while section is streaming in
+        if (!isFirst && buffer.trim()) {
+          skeletonCard = updateSkeletonCard(planArea, skeletonCard, buffer);
         }
       }
 
-      // show actions + rating card
-      const actions = document.getElementById('plan-actions');
-      const ratingCard = document.getElementById('rating-card');
-      if (actions) actions.style.display = 'flex';
-      if (ratingCard) ratingCard.style.display = 'block';
+      finish();
+      document.getElementById('plan-actions').style.display  = 'flex';
+      document.getElementById('rating-card').style.display   = 'block';
 
-      const planSections = planArea ? [...planArea.querySelectorAll('.section-card')].map(c => ({
-        type:   c.dataset.type,
-        title:  c.dataset.title,
-        duration: parseInt(c.dataset.duration),
-      })) : [];
-
-      const meta = { age_group: formData.get('age_group'), players: parseInt(formData.get('players')),
-                     duration: parseInt(formData.get('duration')), focus: formData.get('focus'), sections: planSections };
+      const planSections = [...planArea.querySelectorAll('.section-card')].map(c => ({
+        type: c.dataset.type, title: c.dataset.title, duration: parseInt(c.dataset.duration),
+      }));
+      const meta = {
+        age_group: formData.get('age_group'), players: parseInt(formData.get('players')),
+        duration:  parseInt(formData.get('duration')), focus: formData.get('focus'),
+        sections:  planSections,
+      };
       fetch('/evaluate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(meta) })
         .then(r => r.json()).then(ev => {
           if (!scoreTag) return;
           const cls = ev.overall_score >= 7 ? 'tag-green' : ev.overall_score >= 5 ? 'tag-amber' : 'tag-red';
-          scoreTag.className = `plan-tag ${cls}`;
+          scoreTag.className   = `plan-tag ${cls}`;
           scoreTag.textContent = `AI score: ${ev.overall_score.toFixed(1)}/10`;
           scoreTag.style.display = 'inline-block';
         }).catch(() => {});
 
     } catch(err) {
+      finish();
       document.getElementById('loading-overlay').classList.remove('visible');
       alert('Something went wrong generating the plan. Please try again.');
     }

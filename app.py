@@ -366,8 +366,12 @@ def stream_plan():
             if MOCK_MODE:
                 plan = get_mock_plan(age_group, players, duration, focus, last_week)
                 for section in plan["sections"]:
-                    time.sleep(0.4)
-                    yield json.dumps(section) + DELIMITER
+                    section_json = json.dumps(section)
+                    chunk_size = 20
+                    for i in range(0, len(section_json), chunk_size):
+                        time.sleep(0.03)
+                        yield section_json[i:i + chunk_size]
+                    yield DELIMITER
                 log_perf("stream_plan", int((time.time() - t_start) * 1000), "success", req_meta)
                 return
 
@@ -472,15 +476,16 @@ QUALITY RULES:
                 messages=[{"role": "user", "content": prompt}],
             ) as stream:
                 for text in stream.text_stream:
+                    yield text  # stream token immediately for live preview
                     buffer += text
                     while DELIMITER.strip() in buffer:
                         parts = buffer.split(DELIMITER.strip(), 1)
-                        chunk = parts[0].strip()
-                        if chunk:
+                        section_text = parts[0].strip()
+                        if section_text:
                             try:
-                                cleaned = re.sub(r",\s*([}\]])", r"\1", chunk)
+                                cleaned = re.sub(r",\s*([}\]])", r"\1", section_text)
                                 json.loads(cleaned)
-                                yield cleaned + DELIMITER
+                                yield DELIMITER  # signal: this section is complete
                             except json.JSONDecodeError:
                                 pass
                         buffer = parts[1] if len(parts) > 1 else ""
@@ -489,7 +494,7 @@ QUALITY RULES:
                 try:
                     cleaned = re.sub(r",\s*([}\]])", r"\1", buffer.strip())
                     json.loads(cleaned)
-                    yield cleaned + DELIMITER
+                    yield DELIMITER
                 except json.JSONDecodeError:
                     pass
 
