@@ -423,7 +423,7 @@ QUALITY RULES:
         buffer = ""
         with client.messages.stream(
             model="claude-haiku-4-5-20251001",
-            max_tokens=4500,
+            max_tokens=3000,
             system=system_prompt,
             messages=[{"role": "user", "content": prompt}],
         ) as stream:
