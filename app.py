@@ -1,6 +1,8 @@
 import os
 import re
 import json
+import time
+import traceback
 from datetime import datetime
 from pathlib import Path
 from flask import Flask, render_template, request, send_file, jsonify, Response, stream_with_context
@@ -24,12 +26,39 @@ DATA_DIR.mkdir(exist_ok=True)
 RATINGS_FILE  = DATA_DIR / "ratings.json"
 EVENTS_FILE   = DATA_DIR / "events.json"
 FEEDBACK_FILE = DATA_DIR / "feedback.json"
+PERF_FILE     = DATA_DIR / "perf.json"
+ERRORS_FILE   = DATA_DIR / "errors.json"
+
+
+def _append_json(path: Path, entry: dict) -> None:
+    rows = json.loads(path.read_text()) if path.exists() else []
+    rows.append(entry)
+    path.write_text(json.dumps(rows, indent=2))
 
 
 def log_event(event: str, data: dict = {}) -> None:
-    events = json.loads(EVENTS_FILE.read_text()) if EVENTS_FILE.exists() else []
-    events.append({"timestamp": datetime.now().isoformat(), "event": event, "data": data})
-    EVENTS_FILE.write_text(json.dumps(events, indent=2))
+    _append_json(EVENTS_FILE, {"timestamp": datetime.now().isoformat(), "event": event, "data": data})
+
+
+def log_perf(route: str, duration_ms: int, status: str, meta: dict = {}) -> None:
+    _append_json(PERF_FILE, {
+        "timestamp":   datetime.now().isoformat(),
+        "route":       route,
+        "duration_ms": duration_ms,
+        "status":      status,
+        **meta,
+    })
+
+
+def log_error(route: str, err: Exception, meta: dict = {}) -> None:
+    _append_json(ERRORS_FILE, {
+        "timestamp": datetime.now().isoformat(),
+        "route":     route,
+        "error":     type(err).__name__,
+        "message":   str(err),
+        "traceback": traceback.format_exc(),
+        **meta,
+    })
 
 # ─── Toggle this to False and set ANTHROPIC_API_KEY env var when ready ───────
 MOCK_MODE = False
@@ -283,7 +312,12 @@ Return raw JSON only — no markdown, no text outside the JSON:
 
 @app.route("/", methods=["GET"])
 def index():
-    log_event("page_view", {"path": "/"})
+    log_event("page_view", {
+        "path":       "/",
+        "ip":         request.headers.get("X-Forwarded-For", request.remote_addr),
+        "user_agent": request.headers.get("User-Agent", "")[:120],
+        "referrer":   request.referrer or "",
+    })
     return render_template("index.html", plan=None, local=LOCAL)
 
 
@@ -314,24 +348,34 @@ def stream_plan():
     focus     = request.form.get("focus", "Passing")
     last_week = request.form.get("last_week", "").strip()
 
+    req_meta = {
+        "age_group":  age_group,
+        "focus":      focus,
+        "ip":         request.headers.get("X-Forwarded-For", request.remote_addr),
+        "user_agent": request.headers.get("User-Agent", "")[:120],
+        "referrer":   request.referrer or "",
+    }
+
     def generate():
-        meta = {"age_group": age_group, "players": players, "duration": duration, "focus": focus}
-        log_event("plan_generated", {"age_group": age_group, "focus": focus, "players": players, "duration": duration})
-        yield json.dumps(meta) + DELIMITER
+        t_start = time.time()
+        try:
+            meta = {"age_group": age_group, "players": players, "duration": duration, "focus": focus}
+            log_event("plan_generated", {"age_group": age_group, "focus": focus, "players": players, "duration": duration, **req_meta})
+            yield json.dumps(meta) + DELIMITER
 
-        if MOCK_MODE:
-            import time
-            plan = get_mock_plan(age_group, players, duration, focus, last_week)
-            for section in plan["sections"]:
-                time.sleep(0.4)
-                yield json.dumps(section) + DELIMITER
-            return
+            if MOCK_MODE:
+                plan = get_mock_plan(age_group, players, duration, focus, last_week)
+                for section in plan["sections"]:
+                    time.sleep(0.4)
+                    yield json.dumps(section) + DELIMITER
+                log_perf("stream_plan", int((time.time() - t_start) * 1000), "success", req_meta)
+                return
 
-        import anthropic
-        client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
+            import anthropic
+            client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
 
-        age_guidance = {
-            "U6": """Players are 4-6 years old.
+            age_guidance = {
+                "U6": """Players are 4-6 years old.
 - Activities must be GAMES not drills: tag, colours, animals, treasure hunts with a ball. No standing in lines.
 - Zero tactics, zero positions, zero formations.
 - Every child must have a ball or be actively moving at all times.
@@ -339,7 +383,7 @@ def stream_plan():
 - Coaching points: maximum 1 per activity, must be physical and joyful ("kick it as hard as you can!", "dribble to the cone and back").
 - The session should feel like playtime that happens to use a ball.""",
 
-            "U8": """Players are 6-8 years old.
+                "U8": """Players are 6-8 years old.
 - Introduce basic skills (dribbling, passing, shooting) through fun competitive games.
 - Every child should have a ball or be actively involved — no long queues.
 - Light competition works well: first team to score, beat the clock, score in 3 gates.
@@ -347,7 +391,7 @@ def stream_plan():
 - Coaching points: maximum 2 per drill, concrete and physical ("use the inside of your foot", "look at the goal before you shoot").
 - Keep instructions short — demonstrate, don't lecture.""",
 
-            "U10": """Players are 8-10 years old.
+                "U10": """Players are 8-10 years old.
 - They know HOW to kick and pass — now teach WHEN, WHERE, and WHY.
 - Every passing drill must include MOVEMENT after the pass — never stationary passing lines.
 - Use 2v1 and 3v2 situations to introduce decision-making under light pressure.
@@ -357,7 +401,7 @@ def stream_plan():
 - The small-sided game must include a rule that directly rewards the session focus (e.g. for passing: a bonus point for completing 5 consecutive passes before scoring).
 - Avoid abstract language — everything must be something they can immediately do.""",
 
-            "U12": """Players are 10-12 years old.
+                "U12": """Players are 10-12 years old.
 CRITICAL: Do NOT use basic technique cues — they already know how to pass, dribble, and shoot.
 - Focus entirely on TACTICAL concepts: through balls, one-twos, third-man runs, pressing triggers, switching the point of attack, creating and exploiting space behind the defensive line.
 - Drills must have pressure and decision-making: defenders, time limits, or numerical disadvantages.
@@ -366,21 +410,21 @@ CRITICAL: Do NOT use basic technique cues — they already know how to pass, dri
 - The game must replicate a realistic match situation — positional overloads, transition moments, or directional play.
 - Challenge them: if a drill feels too easy after 5 minutes, add a defender or reduce the space.""",
 
-            "U14": """Players are 12-14 years old.
+                "U14": """Players are 12-14 years old.
 - High tactical complexity: positional play, structured pressing, attacking and defensive transitions, combination play.
 - Drills should replicate match situations: half-press triggers, building out from the back under pressure, third-man and fourth-man combinations.
 - Coaching points: specific tactical cues tied to team shape and game model ("the 8 drops into the half-space when the 6 has the ball", "press when the ball goes to the centre-back's weak foot").
 - The game must have positional constraints or transition rules that demand tactical discipline.
 - Players can handle multi-phase combinations and should be challenged to think ahead.""",
 
-            "U16": """Players are 14-16 years old.
+                "U16": """Players are 14-16 years old.
 - Professional-level tactical training. Team shape, structured pressing systems, clinical finishing sequences.
 - Every drill should have a clear tactical objective linked to the team's game model.
 - Coaching points: precise, measurable, and uncompromising ("the striker's pressing trigger is the centre-back's first touch under pressure — go at 80% intensity immediately").
 - Sessions should feel demanding and purposeful — like professional training.""",
-        }
+            }
 
-        system_prompt = """You are an expert youth soccer coach with 20 years of experience coaching recreational and academy players aged 4-16. You specialise in writing session plans that volunteer parent coaches — with zero formal training — can pick up and run confidently on a Saturday morning.
+            system_prompt = """You are an expert youth soccer coach with 20 years of experience coaching recreational and academy players aged 4-16. You specialise in writing session plans that volunteer parent coaches — with zero formal training — can pick up and run confidently on a Saturday morning.
 
 A great session plan has these qualities:
 1. FLOW: each section builds on the previous one. Warmup activates the skill, drills isolate and develop it, game applies it under pressure.
@@ -390,7 +434,7 @@ A great session plan has these qualities:
 5. FOCUS ALIGNMENT: every single drill and the game must directly develop the session focus. No filler.
 6. TIMING: durations must add up exactly to the total session length. Never pad cooldown beyond 5 minutes."""
 
-        prompt = f"""Generate a youth soccer session plan as 5 JSON objects separated by ---NEXT---
+            prompt = f"""Generate a youth soccer session plan as 5 JSON objects separated by ---NEXT---
 
 SESSION DETAILS:
 - Age group: {age_group}
@@ -420,34 +464,40 @@ QUALITY RULES:
 - durations: warmup 10-15%, each drill 20-25%, game 30-35%, cooldown 5 min — must total exactly {duration} minutes
 - game section: must include a specific rule that rewards the {focus} focus"""
 
-        buffer = ""
-        with client.messages.stream(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=3000,
-            system=system_prompt,
-            messages=[{"role": "user", "content": prompt}],
-        ) as stream:
-            for text in stream.text_stream:
-                buffer += text
-                while DELIMITER.strip() in buffer:
-                    parts = buffer.split(DELIMITER.strip(), 1)
-                    chunk = parts[0].strip()
-                    if chunk:
-                        try:
-                            cleaned = re.sub(r",\s*([}\]])", r"\1", chunk)
-                            json.loads(cleaned)
-                            yield cleaned + DELIMITER
-                        except json.JSONDecodeError:
-                            pass
-                    buffer = parts[1] if len(parts) > 1 else ""
+            buffer = ""
+            with client.messages.stream(
+                model="claude-haiku-4-5-20251001",
+                max_tokens=3000,
+                system=system_prompt,
+                messages=[{"role": "user", "content": prompt}],
+            ) as stream:
+                for text in stream.text_stream:
+                    buffer += text
+                    while DELIMITER.strip() in buffer:
+                        parts = buffer.split(DELIMITER.strip(), 1)
+                        chunk = parts[0].strip()
+                        if chunk:
+                            try:
+                                cleaned = re.sub(r",\s*([}\]])", r"\1", chunk)
+                                json.loads(cleaned)
+                                yield cleaned + DELIMITER
+                            except json.JSONDecodeError:
+                                pass
+                        buffer = parts[1] if len(parts) > 1 else ""
 
-        if buffer.strip():
-            try:
-                cleaned = re.sub(r",\s*([}\]])", r"\1", buffer.strip())
-                json.loads(cleaned)
-                yield cleaned + DELIMITER
-            except json.JSONDecodeError:
-                pass
+            if buffer.strip():
+                try:
+                    cleaned = re.sub(r",\s*([}\]])", r"\1", buffer.strip())
+                    json.loads(cleaned)
+                    yield cleaned + DELIMITER
+                except json.JSONDecodeError:
+                    pass
+
+            log_perf("stream_plan", int((time.time() - t_start) * 1000), "success", req_meta)
+
+        except Exception as err:
+            log_error("stream_plan", err, req_meta)
+            raise
 
     return Response(
         stream_with_context(generate()),
@@ -530,6 +580,8 @@ def analytics():
     events           = json.loads(EVENTS_FILE.read_text())   if EVENTS_FILE.exists()   else []
     feedback_entries = json.loads(FEEDBACK_FILE.read_text()) if FEEDBACK_FILE.exists() else []
     ratings          = json.loads(RATINGS_FILE.read_text())  if RATINGS_FILE.exists()  else []
+    perf_entries     = json.loads(PERF_FILE.read_text())     if PERF_FILE.exists()     else []
+    error_entries    = json.loads(ERRORS_FILE.read_text())   if ERRORS_FILE.exists()   else []
 
     page_views      = sum(1 for e in events if e["event"] == "page_view")
     plans_generated = [e for e in events if e["event"] == "plan_generated"]
@@ -546,18 +598,46 @@ def analytics():
 
     avg_rating = round(sum(r["rating"] for r in ratings) / len(ratings), 1) if ratings else 0
 
+    # perf stats
+    success_times = [p["duration_ms"] for p in perf_entries if p.get("status") == "success"]
+    avg_gen_ms    = int(sum(success_times) / len(success_times)) if success_times else 0
+    p95_gen_ms    = int(sorted(success_times)[int(len(success_times) * 0.95)]) if len(success_times) >= 5 else 0
+
+    # referrer breakdown from page_view events
+    referrer_counts: dict[str, int] = defaultdict(int)
+    ua_counts: dict[str, int]       = defaultdict(int)
+    for e in events:
+        if e["event"] == "page_view":
+            ref = e["data"].get("referrer", "") or "Direct"
+            if ref != "Direct":
+                from urllib.parse import urlparse
+                ref = urlparse(ref).netloc or "Direct"
+            referrer_counts[ref] += 1
+            ua = e["data"].get("user_agent", "")
+            if "Mobile" in ua or "Android" in ua:
+                ua_counts["Mobile"] += 1
+            else:
+                ua_counts["Desktop"] += 1
+
     return render_template(
         "analytics.html",
-        page_views     = page_views,
-        plans_count    = len(plans_generated),
-        age_counts     = sorted(age_counts.items()),
-        focus_counts   = sorted(focus_counts.items()),
-        daily          = sorted(daily.items())[-14:],
-        ratings        = list(reversed(ratings[-10:])),
-        avg_rating     = avg_rating,
-        ratings_count  = len(ratings),
-        feedback       = list(reversed(feedback_entries[-20:])),
-        local          = LOCAL,
+        page_views      = page_views,
+        plans_count     = len(plans_generated),
+        age_counts      = sorted(age_counts.items()),
+        focus_counts    = sorted(focus_counts.items()),
+        daily           = sorted(daily.items())[-14:],
+        ratings         = list(reversed(ratings[-10:])),
+        avg_rating      = avg_rating,
+        ratings_count   = len(ratings),
+        feedback        = list(reversed(feedback_entries[-20:])),
+        local           = LOCAL,
+        perf_recent     = list(reversed(perf_entries[-30:])),
+        avg_gen_ms      = avg_gen_ms,
+        p95_gen_ms      = p95_gen_ms,
+        error_count     = len(error_entries),
+        errors_recent   = list(reversed(error_entries[-10:])),
+        referrer_counts = sorted(referrer_counts.items(), key=lambda x: -x[1])[:8],
+        ua_counts       = sorted(ua_counts.items()),
     )
 
 

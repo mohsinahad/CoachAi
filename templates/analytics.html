@@ -62,6 +62,17 @@
     .spark-bar { flex: 1; background: var(--green-dim); border-radius: 2px 2px 0 0; min-height: 2px; transition: background 0.2s; }
     .spark-bar:hover { background: var(--green); }
 
+    /* PERF */
+    .perf-spark { display: flex; align-items: flex-end; gap: 2px; height: 40px; margin-bottom: 4px; }
+    .perf-bar { flex: 1; border-radius: 2px 2px 0 0; min-height: 2px; transition: background 0.2s; }
+    .perf-bar.fast   { background: var(--green); }
+    .perf-bar.medium { background: #f59e0b; }
+    .perf-bar.slow   { background: #ef4444; }
+    .perf-bar:hover  { opacity: 0.8; }
+    .stat-card.warn  { border-color: rgba(239,68,68,0.4); }
+    .stat-card.warn .stat-value { color: #f87171; }
+    .error-tb { font-size: 0.7rem; color: var(--muted); font-family: monospace; white-space: pre-wrap; word-break: break-all; max-height: 80px; overflow: hidden; margin-top: 4px; }
+
     @media (max-width: 640px) {
       .two-col { grid-template-columns: 1fr; }
       .stat-row { grid-template-columns: 1fr 1fr; }
@@ -104,6 +115,26 @@
     <div class="stat-card">
       <div class="stat-value">{{ feedback | length }}</div>
       <div class="stat-label">Feedback Items</div>
+    </div>
+  </div>
+
+  <!-- PERF STAT CARDS -->
+  <div class="stat-row">
+    <div class="stat-card">
+      <div class="stat-value">{{ (avg_gen_ms / 1000) | round(1) if avg_gen_ms else '—' }}s</div>
+      <div class="stat-label">Avg Generation Time</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{{ (p95_gen_ms / 1000) | round(1) if p95_gen_ms else '—' }}s</div>
+      <div class="stat-label">P95 Generation Time</div>
+    </div>
+    <div class="stat-card {{ 'warn' if error_count > 0 else '' }}">
+      <div class="stat-value">{{ error_count }}</div>
+      <div class="stat-label">Errors</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{{ perf_recent | length }}</div>
+      <div class="stat-label">Timed Requests</div>
     </div>
   </div>
 
@@ -226,6 +257,94 @@
     </table>
     {% else %}
       <p class="empty-note">No feedback submitted yet.</p>
+    {% endif %}
+  </div>
+
+  <!-- PERFORMANCE CHART -->
+  <div class="card">
+    <div class="section-title">Generation Times (last 30 requests)</div>
+    {% if perf_recent %}
+      {% set max_ms = perf_recent | map(attribute='duration_ms') | max %}
+      <div class="perf-spark">
+        {% for p in perf_recent | reverse %}
+          {% set pct = [((p.duration_ms / max_ms) * 100) | round, 4] | max %}
+          {% set cls = 'fast' if p.duration_ms < 5000 else ('medium' if p.duration_ms < 10000 else 'slow') %}
+          <div class="perf-bar {{ cls }}" style="height:{{ pct }}%"
+               title="{{ p.timestamp[:16] }} — {{ (p.duration_ms/1000)|round(1) }}s · {{ p.get('age_group','') }} {{ p.get('focus','') }}"></div>
+        {% endfor %}
+      </div>
+      <div style="font-size:0.7rem; color:var(--muted);">
+        Green &lt;5s &nbsp;·&nbsp; Amber 5–10s &nbsp;·&nbsp; Red &gt;10s
+      </div>
+    {% else %}
+      <p class="empty-note">No performance data yet — generates on first real plan.</p>
+    {% endif %}
+  </div>
+
+  <!-- TRAFFIC SOURCES + DEVICES -->
+  <div class="two-col">
+    <div class="card">
+      <div class="section-title">Traffic Sources</div>
+      {% if referrer_counts %}
+        {% set max_ref = referrer_counts | map(attribute=1) | max %}
+        {% for label, count in referrer_counts %}
+        <div class="bar-row">
+          <div class="bar-label" style="width:110px; font-size:0.75rem;">{{ label[:14] }}</div>
+          <div class="bar-track"><div class="bar-fill" style="width:{{ (count / max_ref * 100) | round }}%"></div></div>
+          <div class="bar-count">{{ count }}</div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <p class="empty-note">No data yet.</p>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <div class="section-title">Device Type</div>
+      {% if ua_counts %}
+        {% set max_ua = ua_counts | map(attribute=1) | max %}
+        {% for label, count in ua_counts %}
+        <div class="bar-row">
+          <div class="bar-label">{{ label }}</div>
+          <div class="bar-track"><div class="bar-fill" style="width:{{ (count / max_ua * 100) | round }}%"></div></div>
+          <div class="bar-count">{{ count }}</div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <p class="empty-note">No data yet.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- RECENT ERRORS -->
+  <div class="card">
+    <div class="section-title">Recent Errors</div>
+    {% if errors_recent %}
+    <table class="activity-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Route</th>
+          <th>Error</th>
+          <th>Detail</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for e in errors_recent %}
+        <tr>
+          <td>{{ e.timestamp[:16] }}</td>
+          <td>{{ e.route }}</td>
+          <td><span class="rating-pill rp-red">{{ e.error }}</span></td>
+          <td>
+            <div style="font-size:0.78rem; color:var(--muted);">{{ e.message[:100] }}</div>
+            {% if e.get('age_group') %}<div style="font-size:0.72rem; color:var(--muted);">{{ e.age_group }} · {{ e.get('focus','') }}</div>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+      <p class="empty-note">No errors logged.</p>
     {% endif %}
   </div>
 
