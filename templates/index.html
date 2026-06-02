@@ -145,6 +145,9 @@
     }
     .btn-generate:hover { background: #15803d; }
     .btn-generate:disabled { background: var(--green-dim); cursor: not-allowed; opacity: 0.65; }
+    .plan-notice { padding: 0.75rem 1.2rem; border-radius: 8px; font-size: 0.85rem; margin: 1rem 0; display: none; }
+    .plan-notice.error   { background: #1a0808; border: 1px solid #7f1d1d; color: #fca5a5; }
+    .plan-notice.warning { background: #1a1008; border: 1px solid #78350f; color: #fcd34d; }
 
     /* MOCK BADGE */
     .mock-notice {
@@ -1042,6 +1045,7 @@
   </div>
 
   <div id="plan-area"></div>
+  <div id="plan-notice" class="plan-notice"></div>
 
   <div class="actions" id="plan-actions" style="display:none;">
     <a href="/" class="btn-new">New Session</a>
@@ -1371,11 +1375,26 @@
     if (scoreTag) scoreTag.style.display = 'none';
 
     let skeletonCard = null;
+    let completedSections = 0;
+    const notice = document.getElementById('plan-notice');
 
     const finish = () => {
       btn.disabled = false;
       btn.textContent = 'Generate Session Plan';
     };
+
+    const showNotice = (type, msg) => {
+      notice.className = `plan-notice ${type}`;
+      notice.textContent = msg;
+      notice.style.display = 'block';
+    };
+
+    const cleanupSkeleton = () => {
+      if (skeletonCard && skeletonCard.parentNode) skeletonCard.remove();
+      skeletonCard = null;
+    };
+
+    notice.style.display = 'none';
 
     try {
       const response = await fetch('/stream-plan', { method: 'POST', body: formData });
@@ -1411,7 +1430,6 @@
               window._planMeta = data;
               initProgress();
             } else {
-              // replace skeleton with proper card
               const card = buildSectionCard(data);
               if (skeletonCard && skeletonCard.parentNode) {
                 card.style.opacity    = '1';
@@ -1421,46 +1439,62 @@
                 planArea.appendChild(card);
               }
               skeletonCard = null;
+              completedSections++;
               advanceProgress();
               card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
               if (document.body.classList.contains('field-mode')) {
                 card.querySelectorAll('.setup-block,.coaching-block,.why-block').forEach(el => el.style.display = 'none');
               }
             }
-          } catch(err) { /* skip invalid chunk */ }
+          } catch(err) { /* skip unparseable chunk */ }
         }
 
-        // live preview: update skeleton while section is streaming in
         if (!isFirst && buffer.trim()) {
           skeletonCard = updateSkeletonCard(planArea, skeletonCard, buffer);
         }
       }
 
+      cleanupSkeleton();
       finish();
-      document.getElementById('plan-actions').style.display  = 'flex';
-      document.getElementById('rating-card').style.display   = 'block';
 
-      const planSections = [...planArea.querySelectorAll('.section-card')].map(c => ({
-        type: c.dataset.type, title: c.dataset.title, duration: parseInt(c.dataset.duration),
-      }));
-      const meta = {
-        age_group: formData.get('age_group'), players: parseInt(formData.get('players')),
-        duration:  parseInt(formData.get('duration')), focus: formData.get('focus'),
-        sections:  planSections,
-      };
-      fetch('/evaluate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(meta) })
-        .then(r => r.json()).then(ev => {
-          if (!scoreTag) return;
-          const cls = ev.overall_score >= 7 ? 'tag-green' : ev.overall_score >= 5 ? 'tag-amber' : 'tag-red';
-          scoreTag.className   = `plan-tag ${cls}`;
-          scoreTag.textContent = `AI score: ${ev.overall_score.toFixed(1)}/10`;
-          scoreTag.style.display = 'inline-block';
-        }).catch(() => {});
+      if (completedSections === 0) {
+        document.getElementById('loading-overlay').classList.remove('visible');
+        showNotice('error', 'No plan was generated. Please try again.');
+      } else {
+        if (completedSections < 5) {
+          showNotice('warning', `Generation stopped early — ${completedSections} of 5 sections completed. What's here is usable; try again for a full plan.`);
+        }
+        document.getElementById('plan-actions').style.display = 'flex';
+        document.getElementById('rating-card').style.display  = 'block';
+        const planSections = [...planArea.querySelectorAll('.section-card')].map(c => ({
+          type: c.dataset.type, title: c.dataset.title, duration: parseInt(c.dataset.duration),
+        }));
+        const meta = {
+          age_group: formData.get('age_group'), players: parseInt(formData.get('players')),
+          duration:  parseInt(formData.get('duration')), focus: formData.get('focus'),
+          sections:  planSections,
+        };
+        fetch('/evaluate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(meta) })
+          .then(r => r.json()).then(ev => {
+            if (!scoreTag) return;
+            const cls = ev.overall_score >= 7 ? 'tag-green' : ev.overall_score >= 5 ? 'tag-amber' : 'tag-red';
+            scoreTag.className   = `plan-tag ${cls}`;
+            scoreTag.textContent = `AI score: ${ev.overall_score.toFixed(1)}/10`;
+            scoreTag.style.display = 'inline-block';
+          }).catch(() => {});
+      }
 
     } catch(err) {
+      cleanupSkeleton();
       finish();
       document.getElementById('loading-overlay').classList.remove('visible');
-      alert('Something went wrong generating the plan. Please try again.');
+      if (completedSections > 0) {
+        showNotice('warning', `Connection interrupted — ${completedSections} section(s) completed. What's here is usable.`);
+        document.getElementById('plan-actions').style.display = 'flex';
+        document.getElementById('rating-card').style.display  = 'block';
+      } else {
+        showNotice('error', 'Could not connect to the server. Check your connection and try again.');
+      }
     }
   });
 

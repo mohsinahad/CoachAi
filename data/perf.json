@@ -922,5 +922,159 @@
     "ip": "127.0.0.1",
     "user_agent": "Werkzeug/3.0.3",
     "referrer": ""
+  },
+  {
+    "timestamp": "2026-06-02T14:53:46.463696",
+    "route": "stream_plan",
+    "duration_ms": 6693,
+    "status": "success",
+    "age_group": "U10",
+    "focus": "Passing",
+    "ip": "127.0.0.1",
+    "user_agent": "Werkzeug/3.0.3",
+    "referrer": ""
+  },
+  {
+    "timestamp": "2026-06-02T14:53:53.155311",
+    "route": "stream_plan",
+    "duration_ms": 6687,
+    "status": "success",
+    "age_group": "U10",
+    "focus": "Passing",
+    "ip": "127.0.0.1",
+    "user_agent": "Werkzeug/3.0.3",
+    "referrer": ""
+  },
+  {
+    "timestamp": "2026-06-02T14:53:59.907524",
+    "route": "stream_plan",
+    "duration_ms": 6745,
+    "status": "success",
+    "age_group": "U10",
+    "focus": "Passing",
+    "ip": "127.0.0.1",
+    "user_agent": "Werkzeug/3.0.3",
+    "referrer": ""
+  },
+  {
+    "timestamp": "2026-06-02T14:54:06.635760",
+    "route": "stream_plan",
+    "duration_ms": 6719,
+    "status": "success",
+    "age_group": "U6",
+    "focus": "Passing",
+    "ip": "127.0.0.1",
+    "user_agent": "Werkzeug/3.0.3",
+    "referrer": ""
+  },
+  {
+    "timestamp": "2026-06-02T14:54:13.333863",
+    "route": "stream_plan",
+    "duration_ms": 6695,
+    "status": "success",
+    "age_group": "U8",
+    "focus": "Passing",
+    "ip": "127.0.0.1",
+    "user_agent": "Werkzeug/3.0.3",
+    "referrer": ""
+  },
+  {
+    "timestamp": "2026-06-02T14:54:20.086167",
+    "route": "stream_plan",
+    "duration_ms": 6749,
+    "status": "success",
+    "age_group": "U10",
+    "focus": "Passing",
+    "ip": "127.0.0.1",
+    "user_agent": "Werkzeug/3.0.3",
+    "referrer": ""
+  },
+  {
+    "timestamp": "2026-06-02T14:54:26.790512",
+    "route": "stream_plan",
+    "duration_ms": 6698,
+    "status": "success",
+    "age_group": "U12",
+    "focus": "Passing",
+    "ip": "127.0.0.1",
+    "user_agent": "Werkzeug/3.0.3",
+    "referrer": ""
+  },
+  {
+    "timestamp": "2026-06-02T14:54:33.530084",
+    "route": "stream_plan",
+    "duration_ms": 6735,
+    "status": "success",
+    "age_group": "U14",
+    "focus": "Passing",
+    "ip": "127.0.0.1",
+    "user_agent": "Werkzeug/3.0.3",
+    "referrer": ""
+  },
+  {
+    "timestamp": "2026-06-02T14:54:40.287413",
+    "route": "stream_plan",
+    "duration_ms": 6755,
+    "status": "success",
+    "age_group": "U16",
+    "focus": "Passing",
+    "ip": "127.0.0.1",
+    "user_agent": "Werkzeug/3.0.3",
+    "referrer": ""
+  },
+  {
+    "timestamp": "2026-06-02T14:54:47.060437",
+    "route": "stream_plan",
+    "duration_ms": 6715,
+    "status": "success",
+    "age_group": "U10",
+    "focus": "Passing",
+    "ip": "127.0.0.1",
+    "user_agent": "Werkzeug/3.0.3",
+    "referrer": ""
+  },
+  {
+    "timestamp": "2026-06-02T14:54:53.820752",
+    "route": "stream_plan",
+    "duration_ms": 6752,
+    "status": "success",
+    "age_group": "U10",
+    "focus": "Passing",
+    "ip": "127.0.0.1",
+    "user_agent": "Werkzeug/3.0.3",
+    "referrer": ""
+  },
+  {
+    "timestamp": "2026-06-02T14:55:00.542282",
+    "route": "stream_plan",
+    "duration_ms": 6712,
+    "status": "success",
+    "age_group": "U10",
+    "focus": "Passing",
+    "ip": "127.0.0.1",
+    "user_agent": "Werkzeug/3.0.3",
+    "referrer": ""
+  },
+  {
+    "timestamp": "2026-06-02T14:55:07.282423",
+    "route": "stream_plan",
+    "duration_ms": 6735,
+    "status": "success",
+    "age_group": "U10",
+    "focus": "Passing",
+    "ip": "127.0.0.1",
+    "user_agent": "Werkzeug/3.0.3",
+    "referrer": ""
+  },
+  {
+    "timestamp": "2026-06-02T14:55:14.042661",
+    "route": "stream_plan",
+    "duration_ms": 6752,
+    "status": "success",
+    "age_group": "U10",
+    "focus": "Passing",
+    "ip": "127.0.0.1",
+    "user_agent": "Werkzeug/3.0.3",
+    "referrer": ""
   }
 ]
