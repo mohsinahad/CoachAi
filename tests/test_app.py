@@ -150,14 +150,14 @@ def test_stream_plan_contains_delimiter(app_client):
     r = client.post("/stream-plan", data={
         "age_group": "U10", "players": "12", "duration": "75", "focus": "Passing"
     })
-    assert b"---NEXT---" in r.data
+    assert b"|||" in r.data
 
 def test_stream_plan_first_chunk_is_metadata(app_client):
     client, _, _ = app_client
     r = client.post("/stream-plan", data={
         "age_group": "U10", "players": "12", "duration": "75", "focus": "Passing"
     })
-    first_chunk = r.data.split(b"---NEXT---")[0].strip()
+    first_chunk = r.data.split(b"|||")[0].strip()
     meta = json.loads(first_chunk)
     assert meta["age_group"] == "U10"
     assert meta["focus"] == "Passing"
@@ -167,7 +167,7 @@ def test_stream_plan_yields_five_sections(app_client):
     r = client.post("/stream-plan", data={
         "age_group": "U10", "players": "12", "duration": "75", "focus": "Passing"
     })
-    parts = [p.strip() for p in r.data.split(b"---NEXT---") if p.strip()]
+    parts = [p.strip() for p in r.data.split(b"|||") if p.strip()]
     # first part is metadata, remaining 5 are sections
     assert len(parts) == 6
 
@@ -359,7 +359,7 @@ def test_plan_sections_cover_all_types(app_client):
     r = client.post("/stream-plan", data={
         "age_group": "U10", "players": "12", "duration": "75", "focus": "Passing"
     })
-    parts = [p.strip() for p in r.data.split(b"---NEXT---") if p.strip()]
+    parts = [p.strip() for p in r.data.split(b"|||") if p.strip()]
     sections = [json.loads(p) for p in parts[1:]]  # skip metadata
     types = {s["type"] for s in sections}
     assert "warmup"   in types, "Missing warmup section"
@@ -371,7 +371,7 @@ def test_plan_instructions_have_minimum_steps(app_client):
     r = client.post("/stream-plan", data={
         "age_group": "U10", "players": "12", "duration": "75", "focus": "Passing"
     })
-    parts = [p.strip() for p in r.data.split(b"---NEXT---") if p.strip()]
+    parts = [p.strip() for p in r.data.split(b"|||") if p.strip()]
     sections = [json.loads(p) for p in parts[1:]]
     for s in sections:
         assert len(s["instructions"]) >= 2, \
@@ -382,7 +382,7 @@ def test_plan_coaching_points_present(app_client):
     r = client.post("/stream-plan", data={
         "age_group": "U10", "players": "12", "duration": "75", "focus": "Passing"
     })
-    parts = [p.strip() for p in r.data.split(b"---NEXT---") if p.strip()]
+    parts = [p.strip() for p in r.data.split(b"|||") if p.strip()]
     sections = [json.loads(p) for p in parts[1:]]
     for s in sections:
         assert len(s["coaching_points"]) >= 1, \
@@ -393,7 +393,7 @@ def test_plan_all_durations_positive(app_client):
     r = client.post("/stream-plan", data={
         "age_group": "U10", "players": "12", "duration": "75", "focus": "Passing"
     })
-    parts = [p.strip() for p in r.data.split(b"---NEXT---") if p.strip()]
+    parts = [p.strip() for p in r.data.split(b"|||") if p.strip()]
     sections = [json.loads(p) for p in parts[1:]]
     for s in sections:
         assert s["duration"] > 0, f"Section '{s['title']}' has zero/negative duration"
@@ -403,7 +403,7 @@ def test_plan_has_setup_in_every_section(app_client):
     r = client.post("/stream-plan", data={
         "age_group": "U10", "players": "12", "duration": "75", "focus": "Passing"
     })
-    parts = [p.strip() for p in r.data.split(b"---NEXT---") if p.strip()]
+    parts = [p.strip() for p in r.data.split(b"|||") if p.strip()]
     sections = [json.loads(p) for p in parts[1:]]
     for s in sections:
         assert s.get("setup", "").strip(), f"Section '{s['title']}' has empty setup"

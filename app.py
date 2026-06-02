@@ -398,7 +398,7 @@ def generate():
     return render_template("index.html", plan=plan, evaluation=None, mock=MOCK_MODE, local=LOCAL)
 
 
-DELIMITER = "\n---NEXT---\n"
+DELIMITER = "\n|||\n"
 
 
 @app.route("/stream-plan", methods=["POST"])
@@ -442,7 +442,12 @@ def stream_plan():
                 base_url=os.environ.get("AI_INTEGRATIONS_ANTHROPIC_BASE_URL"),
             )
 
-            prompt = f"""Generate exactly 5 JSON objects for a {duration}-minute youth soccer session, each separated by ---NEXT---. Output ONLY the raw JSON — no text before, between, or after the objects.
+            prompt = f"""Generate exactly 5 JSON objects for a {duration}-minute youth soccer session. Separate each object with ||| on its own line. Output raw JSON only.
+
+CRITICAL FORMAT RULES — violations will break the parser:
+- NO backticks, NO ```json, NO markdown of any kind
+- ||| must appear ONLY between JSON objects, NEVER inside a string value
+- NO text before the first object or after the last object
 
 SESSION:
 - Age group: {age_group} | Players: {players} | Duration: {duration} min | Focus: {focus}
@@ -451,21 +456,21 @@ SESSION:
 AGE GROUP RULES — these override everything else:
 {AGE_GUIDANCE.get(age_group, '')}
 
-OUTPUT FORMAT (5 objects, ---NEXT--- between each, nothing else):
+OUTPUT (exactly this structure, ||| between sections, nothing else):
 {{"type":"warmup","title":"...","duration":<int>,"setup":"...","instructions":["...","...","..."],"coaching_points":["...","..."],"why":"..."}}
----NEXT---
+|||
 {{"type":"drill","title":"...","duration":<int>,"setup":"...","instructions":["...","...","..."],"coaching_points":["...","..."],"why":"..."}}
----NEXT---
+|||
 {{"type":"drill","title":"...","duration":<int>,"setup":"...","instructions":["...","...","..."],"coaching_points":["...","..."],"why":"..."}}
----NEXT---
+|||
 {{"type":"game","title":"...","duration":<int>,"setup":"...","instructions":["...","...","..."],"coaching_points":["...","..."],"why":"..."}}
----NEXT---
+|||
 {{"type":"cooldown","title":"...","duration":5,"setup":"...","instructions":["...","...","..."],"coaching_points":["...","..."],"why":"..."}}
 
-STRICT RULES — no exceptions:
+CONTENT RULES:
 - setup: exactly 1 sentence — area size, equipment, player grouping
 - instructions: exactly 3 steps, each under 20 words, written for a parent who has never coached
-- coaching_points: exactly 2 cues, each under 15 words, must describe observable behaviour (not "communicate" or "work together")
+- coaching_points: exactly 2 cues, each under 15 words, observable behaviour only (not "communicate" or "work together")
 - why: exactly 1 sentence
 - durations: warmup ~10%, each drill ~22%, game ~31%, cooldown 5 min — must total exactly {duration} min
 - game: scoring rule must require {focus} (e.g. "goal only counts after 3 {focus.lower()} actions")"""
