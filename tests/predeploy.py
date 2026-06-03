@@ -57,7 +57,7 @@ check("ANALYTICS_KEY check present", "ANALYTICS_KEY" in app_src,
 
 # ── Templates ─────────────────────────────────────────────────────────────────
 
-for tmpl in ["index.html", "progress.html", "plan.html", "analytics.html"]:
+for tmpl in ["index.html", "analytics.html"]:
     check(f"templates/{tmpl} exists", (ROOT / "templates" / tmpl).exists())
 
 # ── Data directory ────────────────────────────────────────────────────────────

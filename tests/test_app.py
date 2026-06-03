@@ -291,16 +291,6 @@ def test_analytics_blocked_in_production_with_wrong_key(app_client):
 
 # ── Integration: static pages ─────────────────────────────────────────────────
 
-def test_progress_page_returns_200(app_client):
-    client, _, _ = app_client
-    r = client.get("/progress")
-    assert r.status_code == 200
-
-def test_plan_page_returns_200(app_client):
-    client, _, _ = app_client
-    r = client.get("/plan")
-    assert r.status_code == 200
-
 
 # ── Performance: latency thresholds (mock mode) ───────────────────────────────
 

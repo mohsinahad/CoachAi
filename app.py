@@ -685,14 +685,6 @@ def analytics():
     )
 
 
-@app.route("/plan")
-def business_plan():
-    return render_template("plan.html")
-
-
-@app.route("/progress")
-def progress():
-    return render_template("progress.html")
 
 
 @app.route("/og-image.png")
@@ -711,8 +703,6 @@ def sitemap():
     body = """<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://coachaisoccer.com/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
-  <url><loc>https://coachaisoccer.com/progress</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://coachaisoccer.com/plan</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
 </urlset>"""
     return Response(body, mimetype="application/xml")
 
@@ -726,7 +716,6 @@ def llms():
 ## Public pages
 
 - Home / Session Planner: https://coachaisoccer.com/
-- How It Works / Progress: https://coachaisoccer.com/progress
 
 ## What CoachAI does
 
