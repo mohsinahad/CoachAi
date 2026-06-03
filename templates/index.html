@@ -149,6 +149,43 @@
     .plan-notice.error   { background: #1a0808; border: 1px solid #7f1d1d; color: #fca5a5; }
     .plan-notice.warning { background: #1a1008; border: 1px solid #78350f; color: #fcd34d; }
 
+    /* EMAIL CAPTURE */
+    .email-card {
+      background: var(--bg2);
+      border: 1px solid var(--green-dim);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-top: 1.5rem;
+      display: none;
+    }
+    .email-card-title { font-size: 0.95rem; font-weight: 700; color: var(--white); margin-bottom: 0.3rem; }
+    .email-card-sub   { font-size: 0.82rem; color: var(--muted); margin-bottom: 1rem; }
+    .email-row { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+    .email-row input[type="email"] {
+      flex: 1;
+      min-width: 200px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--white);
+      padding: 0.55rem 0.9rem;
+      font-size: 0.88rem;
+    }
+    .email-row input[type="email"]:focus { outline: none; border-color: var(--green); }
+    .btn-subscribe {
+      background: var(--green);
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      padding: 0.55rem 1.2rem;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn-subscribe:hover { background: var(--green-light); }
+    .email-saved { font-size: 0.82rem; color: var(--green-light); margin-top: 0.6rem; display: none; }
+
     /* MOCK BADGE */
     .mock-notice {
       background: rgba(245,158,11,0.1);
@@ -1077,6 +1114,16 @@
     </div>
   </div>
 
+  <div class="email-card" id="email-card">
+    <div class="email-card-title">Get new features as we add them</div>
+    <div class="email-card-sub">We're adding season planning, printable cards, and more. Drop your email to be first to know.</div>
+    <div class="email-row">
+      <input type="email" id="email-input" placeholder="you@example.com" />
+      <button class="btn-subscribe" onclick="submitEmail()">Notify me</button>
+    </div>
+    <div class="email-saved" id="email-saved">You're on the list.</div>
+  </div>
+
   <div class="empty" id="empty-state">
     <div class="empty-icon">⚽</div>
     <h2>Ready to build your session</h2>
@@ -1468,6 +1515,9 @@
         }
         document.getElementById('plan-actions').style.display = 'flex';
         document.getElementById('rating-card').style.display  = 'block';
+        if (!sessionStorage.getItem('email_captured')) {
+          document.getElementById('email-card').style.display = 'block';
+        }
         const planSections = [...planArea.querySelectorAll('.section-card')].map(c => ({
           type: c.dataset.type, title: c.dataset.title, duration: parseInt(c.dataset.duration),
         }));
@@ -1552,6 +1602,25 @@
   function closeFeedbackOnBg(e) {
     if (e.target === document.getElementById('feedback-modal-bg')) closeFeedback();
   }
+  function submitEmail() {
+    const email = document.getElementById('email-input').value.trim();
+    if (!email || !email.includes('@')) return;
+    const formData = new FormData(document.getElementById('plan-form'));
+    fetch('/subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email,
+        age_group: formData.get('age_group') || '',
+        focus:     formData.get('focus') || '',
+      }),
+    }).catch(() => {});
+    sessionStorage.setItem('email_captured', '1');
+    document.getElementById('email-input').style.display    = 'none';
+    document.querySelector('.btn-subscribe').style.display  = 'none';
+    document.getElementById('email-saved').style.display    = 'block';
+  }
+
   function submitFeedback() {
     const msg = document.getElementById('feedback-text').value.trim();
     if (!msg) return;

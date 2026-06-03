@@ -43,6 +43,7 @@ EVENTS_FILE   = DATA_DIR / "events.json"
 FEEDBACK_FILE = DATA_DIR / "feedback.json"
 PERF_FILE     = DATA_DIR / "perf.json"
 ERRORS_FILE   = DATA_DIR / "errors.json"
+EMAILS_FILE   = DATA_DIR / "emails.json"
 
 # ── Prompt content ────────────────────────────────────────────────────────────
 AGE_GUIDANCE: dict[str, str] = {
@@ -588,6 +589,26 @@ def feedback():
     return jsonify({"saved": True})
 
 
+@app.route("/subscribe", methods=["POST"])
+def subscribe():
+    data  = request.get_json(silent=True) or {}
+    email = data.get("email", "").strip().lower()
+    if not email or "@" not in email:
+        return jsonify({"saved": False, "error": "invalid email"})
+    entries = json.loads(EMAILS_FILE.read_text()) if EMAILS_FILE.exists() else []
+    if any(e["email"] == email for e in entries):
+        return jsonify({"saved": True, "duplicate": True})
+    entries.append({
+        "timestamp": datetime.now().isoformat(),
+        "email":     email,
+        "age_group": data.get("age_group", ""),
+        "focus":     data.get("focus", ""),
+    })
+    EMAILS_FILE.write_text(json.dumps(entries, indent=2))
+    log_event("email_subscribed", {"age_group": data.get("age_group", "")})
+    return jsonify({"saved": True, "duplicate": False})
+
+
 @app.route("/analytics")
 def analytics():
     analytics_key = os.environ.get("ANALYTICS_KEY")
@@ -602,6 +623,7 @@ def analytics():
     ratings          = json.loads(RATINGS_FILE.read_text())  if RATINGS_FILE.exists()  else []
     perf_entries     = json.loads(PERF_FILE.read_text())     if PERF_FILE.exists()     else []
     error_entries    = json.loads(ERRORS_FILE.read_text())   if ERRORS_FILE.exists()   else []
+    email_entries    = json.loads(EMAILS_FILE.read_text())   if EMAILS_FILE.exists()   else []
 
     page_views      = sum(1 for e in events if e["event"] == "page_view")
     plans_generated = [e for e in events if e["event"] == "plan_generated"]
@@ -658,6 +680,8 @@ def analytics():
         errors_recent   = list(reversed(error_entries[-10:])),
         referrer_counts = sorted(referrer_counts.items(), key=lambda x: -x[1])[:8],
         ua_counts       = sorted(ua_counts.items()),
+        emails_count    = len(email_entries),
+        emails_recent   = list(reversed(email_entries[-20:])),
     )
 
 
