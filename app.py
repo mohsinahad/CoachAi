@@ -695,6 +695,11 @@ def progress():
     return render_template("progress.html")
 
 
+@app.route("/og-image.png")
+def og_image():
+    return send_file(Path(__file__).parent / "static" / "og-image.png", mimetype="image/png")
+
+
 @app.route("/robots.txt")
 def robots():
     body = "User-agent: *\nAllow: /\nSitemap: https://coachaisoccer.com/sitemap.xml\n"
