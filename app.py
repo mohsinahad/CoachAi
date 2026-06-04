@@ -687,6 +687,11 @@ def analytics():
 
 
 
+@app.route("/googlec357f180edb4e07a.html")
+def google_verify():
+    return Response("google-site-verification: googlec357f180edb4e07a.html", mimetype="text/html")
+
+
 @app.route("/og-image.png")
 def og_image():
     return send_file(Path(__file__).parent / "static" / "og-image.png", mimetype="image/png")
