@@ -692,6 +692,16 @@ def og_image():
     return send_file(Path(__file__).parent / "static" / "og-image.png", mimetype="image/png")
 
 
+@app.route("/articles/u8-soccer-drills")
+def article_u8_drills():
+    return render_template("articles/u8-soccer-drills.html")
+
+
+@app.route("/articles/first-youth-soccer-practice")
+def article_first_practice():
+    return render_template("articles/first-youth-soccer-practice.html")
+
+
 @app.route("/robots.txt")
 def robots():
     body = "User-agent: *\nAllow: /\nSitemap: https://coachaisoccer.com/sitemap.xml\n"
@@ -703,6 +713,8 @@ def sitemap():
     body = """<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://coachaisoccer.com/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
+  <url><loc>https://coachaisoccer.com/articles/u8-soccer-drills</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://coachaisoccer.com/articles/first-youth-soccer-practice</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
 </urlset>"""
     return Response(body, mimetype="application/xml")
 
@@ -716,6 +728,8 @@ def llms():
 ## Public pages
 
 - Home / Session Planner: https://coachaisoccer.com/
+- U8 Soccer Drills for Beginners: https://coachaisoccer.com/articles/u8-soccer-drills
+- How to Run a Youth Soccer Practice for the First Time: https://coachaisoccer.com/articles/first-youth-soccer-practice
 
 ## What CoachAI does
 
