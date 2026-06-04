@@ -816,7 +816,7 @@
       font-style: italic;
       line-height: 1.75;
       opacity: 0;
-      transition: opacity 0.6s ease;
+      transition: opacity 1s ease;
     }
     .quote-text.visible { opacity: 1; }
     .quote-author {
@@ -824,7 +824,7 @@
       color: var(--green-light);
       margin-top: 0.6rem;
       opacity: 0;
-      transition: opacity 0.6s ease;
+      transition: opacity 1s ease;
     }
     .quote-author.visible { opacity: 1; }
 
@@ -1264,7 +1264,7 @@
       authorEl.textContent = quotes[index].author;
       textEl.classList.add('visible');
       authorEl.classList.add('visible');
-    }, 300);
+    }, 1000);
   }
 
   function startLoading() {
@@ -1274,7 +1274,7 @@
     quoteInterval = setInterval(() => {
       quoteIndex = (quoteIndex + 1) % quotes.length;
       showQuote(quoteIndex);
-    }, 4000);
+    }, 8000);
   }
 
   function shareSession() {
