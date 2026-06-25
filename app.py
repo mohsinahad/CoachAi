@@ -707,6 +707,21 @@ def article_first_practice():
     return render_template("articles/first-youth-soccer-practice.html")
 
 
+@app.route("/articles/youth-soccer-warmup-ideas")
+def article_warmup_ideas():
+    return render_template("articles/youth-soccer-warmup-ideas.html")
+
+
+@app.route("/articles/youth-soccer-session-plan-template")
+def article_session_plan_template():
+    return render_template("articles/youth-soccer-session-plan-template.html")
+
+
+@app.route("/articles/how-to-coach-6-year-olds-soccer")
+def article_coach_6_year_olds():
+    return render_template("articles/how-to-coach-6-year-olds-soccer.html")
+
+
 @app.route("/robots.txt")
 def robots():
     body = "User-agent: *\nAllow: /\nSitemap: https://coachaisoccer.com/sitemap.xml\n"
@@ -720,6 +735,9 @@ def sitemap():
   <url><loc>https://coachaisoccer.com/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
   <url><loc>https://coachaisoccer.com/articles/u8-soccer-drills</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://coachaisoccer.com/articles/first-youth-soccer-practice</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://coachaisoccer.com/articles/youth-soccer-warmup-ideas</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://coachaisoccer.com/articles/youth-soccer-session-plan-template</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://coachaisoccer.com/articles/how-to-coach-6-year-olds-soccer</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
 </urlset>"""
     return Response(body, mimetype="application/xml")
 
@@ -735,6 +753,9 @@ def llms():
 - Home / Session Planner: https://coachaisoccer.com/
 - U8 Soccer Drills for Beginners: https://coachaisoccer.com/articles/u8-soccer-drills
 - How to Run a Youth Soccer Practice for the First Time: https://coachaisoccer.com/articles/first-youth-soccer-practice
+- Youth Soccer Warmup Ideas: https://coachaisoccer.com/articles/youth-soccer-warmup-ideas
+- Youth Soccer Session Plan Template: https://coachaisoccer.com/articles/youth-soccer-session-plan-template
+- How to Coach 6 Year Olds in Soccer: https://coachaisoccer.com/articles/how-to-coach-6-year-olds-soccer
 
 ## What CoachAI does
 
